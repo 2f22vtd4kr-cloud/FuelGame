@@ -1,7 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { CharacterKey, BotDifficulty } from '../game/types';
 import { CHARACTERS, CHARACTER_KEYS } from '../data/characters';
 import { gs, startGame } from '../game/state';
+
+// §1.4 "Сегодня в ЖК" rotating flavor texts (atmospheric, updates every 6s)
+const LOBBY_FLAVOR_TEXTS = [
+  'В подъезде №3 снова сломался лифт. Администрация: «Заявка в работе.»',
+  'На стоянке нашли 2 пустые канистры. Очень подозрительно.',
+  'Дядя Серёжа с балкона кричит про талоны. Опять.',
+  'В ЖК-чате 47 смеющихся смайликов под объявлением об уголовной ответственности.',
+  'Крипто-Вова припарковал Zeekr поперёк двух мест. Соседи в ярости.',
+  'Бабушка из 5 подъезда допрашивает всех входящих. Сходка неизбежна.',
+  'АИ-95: 87₽↑. Во дворе неспокойно.',
+  'Петрович снова «чинил» чужую машину в 2 ночи. Или не чинил?',
+  'Марина снимает двор на сторис. Сливщики в панике.',
+  'Ахмет подметает двор и молчит. Он что-то знает.',
+];
 
 interface Props {
   onStart: () => void;
@@ -20,7 +34,16 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
   const [playerCount, setPlayerCount] = useState(6);
   const [siphonersCount, setSiphonersCount] = useState(2);
   const [difficulty, setDifficulty] = useState<BotDifficulty>('medium');
+  const [flavorIdx, setFlavorIdx] = useState(() => Math.floor(Math.random() * LOBBY_FLAVOR_TEXTS.length));
   const charDef = CHARACTERS[selected];
+
+  // §1.4 Rotate "Сегодня в ЖК" flavor text every 6 seconds
+  useEffect(() => {
+    const id = setInterval(() => {
+      setFlavorIdx(i => (i + 1) % LOBBY_FLAVOR_TEXTS.length);
+    }, 6000);
+    return () => clearInterval(id);
+  }, []);
 
   function handleStart() {
     gs.selectedCharacter = selected;
@@ -226,7 +249,26 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
         🌐 Мультиплеер (с друзьями)
       </button>
 
-      <div style={{ marginTop: 16, fontSize: 10, color: '#424242', textAlign: 'center' }}>
+      {/* §1.4 "Сегодня в ЖК" rotating flavor text ticker */}
+      <div style={{
+        width: '100%', maxWidth: 380,
+        marginTop: 16, marginBottom: 8,
+        background: 'rgba(255,87,34,0.08)',
+        border: '1px solid rgba(255,87,34,0.25)',
+        borderRadius: 10, padding: '8px 14px',
+      }}>
+        <div style={{ fontSize: 9, color: '#FF5722', letterSpacing: 1, marginBottom: 4, fontWeight: 'bold' }}>
+          📰 СЕГОДНЯ В ЖК
+        </div>
+        <div style={{
+          fontSize: 11, color: '#BDBDBD', lineHeight: 1.5,
+          transition: 'opacity 0.5s',
+        }}>
+          {LOBBY_FLAVOR_TEXTS[flavorIdx]}
+        </div>
+      </div>
+
+      <div style={{ marginTop: 8, fontSize: 10, color: '#424242', textAlign: 'center' }}>
         ЖК «Цветочные Поляны», 2026 • @bakstab_bot
       </div>
     </div>

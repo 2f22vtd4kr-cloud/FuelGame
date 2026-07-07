@@ -81,7 +81,9 @@ export function tickGame(dt: number, input: InputState): void {
   if (gs.phase !== _prevPhase) {
     if (gs.phase === 'play')         audio.playMusic('play');
     else if (gs.phase === 'meeting') audio.playMusic('meeting');
-    else                             audio.stopMusic();  // briefing, results, lobby
+    else if (gs.phase === 'lobby' || gs.phase === 'results')
+                                     audio.playMusic('menu');
+    else                             audio.stopMusic();  // briefing
     _prevPhase = gs.phase;
   }
 
@@ -653,7 +655,7 @@ function spawnSabotage(key: SabotageKey): void {
   switch (key) {
     case 'pipe_burst':        audio.play('pipe_burst_sfx'); break;
     case 'chat_offline':      audio.play('chat_offline_sfx'); break;
-    case 'alarm_chaos':       audio.play('alarm_chaos_sfx'); break;
+    case 'alarm_chaos':       audio.play('trap_trigger'); audio.play('alarm_chaos_sfx'); break;
     case 'babushka_cerberus': audio.play('babushka_cerberus_sfx'); break;
     default:                  audio.play('alarm_button'); break;
   }

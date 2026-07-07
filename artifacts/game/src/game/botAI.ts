@@ -346,6 +346,8 @@ function updateSlivshchikBot(bot: Player, dt: number): void {
       ambushTarget.isAlive = false;
       bot.ambushCooldown = 25;
       audio.play('ambush');
+      if (ambushTarget.isHuman) audio.play('player_death');
+      else audio.play('bot_death');
       gs.bodies.push({
         id: `body_${ambushTarget.id}_${Date.now()}`,
         playerId: ambushTarget.id,

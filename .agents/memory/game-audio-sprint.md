@@ -21,24 +21,27 @@ description: §8.1 background music scheduler, §8.2 SFX additions, §13.1 sprin
 **Lifecycle wiring** (top of `tickGame`, before any early return):
 ```typescript
 if (gs.phase !== _prevPhase) {
-  if (gs.phase === 'play')         audio.playMusic('play');
-  else if (gs.phase === 'meeting') audio.playMusic('meeting');
-  else                             audio.stopMusic();
+  if (gs.phase === 'play')                              audio.playMusic('play');
+  else if (gs.phase === 'meeting')                      audio.playMusic('meeting');
+  else if (gs.phase === 'lobby' || gs.phase === 'results') audio.playMusic('menu');
+  else                                                  audio.stopMusic(); // briefing
   _prevPhase = gs.phase;
 }
 ```
-- Handles briefing→play, play→meeting, meeting→play, anything→results correctly
+- Handles briefing→play, play→meeting, meeting→play, lobby→menu, results→menu correctly
 - `_prevPhase` module-level variable in `logic.ts`
 - Menu music started in `App.tsx` via `useEffect` (300ms delay) + `handlePlayAgain`
 
 **Rumble layer**: `startRumble()` / `stopRumble()` adds a 40Hz sawtooth + lowpass layer through `musicGain` for siphon proximity atmosphere. Not auto-wired yet — connect to siphon phase 2 proximity.
 
-## New SFX (§8.2) — 12 sounds added
+## New SFX (§8.2) — 13 sounds added (12 + trap_trigger)
 
 All synthesized with Web Audio API. New names in `SoundName` union:
 `vote_skip`, `fuel_lock`, `shawarma_buy`, `player_death`, `bot_death`,
 `footstep_asphalt`, `footstep_grass`, `ui_hover`,
-`car_door`, `engine_start`, `tesla_zap`, `grandma_escort`
+`car_door`, `engine_start`, `tesla_zap`, `grandma_escort`, `trap_trigger`
+
+`trap_trigger` wired to alarm_chaos sabotage activation (plays before `alarm_chaos_sfx`).
 
 **Wired in logic.ts**:
 - `shawarma_buy` → `completeTask` when `defKey === 'shawarma'`

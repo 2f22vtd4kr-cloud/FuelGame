@@ -453,6 +453,7 @@ class AudioManager {
         case 'engine_start':       this._engineStart(); break;
         case 'tesla_zap':          this._teslaZap(); break;
         case 'grandma_escort':     this._grandmaEscort(); break;
+        case 'trap_trigger':       this._trapTrigger(); break;
       }
     } catch { /* ignore synthesis errors */ }
   }
@@ -976,6 +977,38 @@ class AudioManager {
     noise.start(t); noise.stop(t + 0.1);
   }
 
+  /** §8.2 trap_trigger — splat + sputter: thud then fading fizz */
+  private _trapTrigger(): void {
+    const ctx = this.c!; const dest = this.dest!;
+    const t = ctx.currentTime;
+    // Thud: low sine drop
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.connect(g); g.connect(dest);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.exponentialRampToValueAtTime(60, t + 0.12);
+    g.gain.setValueAtTime(0.35, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    osc.start(t); osc.stop(t + 0.2);
+    // Sputter: filtered noise burst
+    const bufSize = Math.floor(ctx.sampleRate * 0.4);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.08));
+    }
+    const noise = ctx.createBufferSource();
+    const ng = ctx.createGain();
+    const f = ctx.createBiquadFilter();
+    f.type = 'bandpass'; f.frequency.value = 800; f.Q.value = 1.5;
+    noise.buffer = buf;
+    noise.connect(f); f.connect(ng); ng.connect(dest);
+    ng.gain.setValueAtTime(0.25, t + 0.05);
+    ng.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    noise.start(t + 0.05); noise.stop(t + 0.55);
+  }
+
   /** §8.2 grandma_escort — three ascending confirmation dings */
   private _grandmaEscort(): void {
     const ctx = this.c!; const dest = this.dest!;
@@ -1001,6 +1034,7 @@ export type SoundName =
   | 'alarm_chaos_sfx' | 'babushka_cerberus_sfx'
   | 'fuel_lock' | 'shawarma_buy' | 'player_death' | 'bot_death'
   | 'footstep_asphalt' | 'footstep_grass'
-  | 'car_door' | 'engine_start' | 'tesla_zap' | 'grandma_escort';
+  | 'car_door' | 'engine_start' | 'tesla_zap' | 'grandma_escort'
+  | 'trap_trigger';
 
 export const audio = new AudioManager();

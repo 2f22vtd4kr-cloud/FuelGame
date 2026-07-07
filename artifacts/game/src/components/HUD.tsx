@@ -16,6 +16,7 @@ const SABOTAGE_KEYS: SabotageKey[] = ['alarm_chaos', 'chat_offline', 'babushka_c
 export default function HUD({ state }: HUDProps) {
   const [showSabotageMenu, setShowSabotageMenu] = useState(false);
   const [showEmoteWheel, setShowEmoteWheel] = useState(false);
+  const [showObjective, setShowObjective] = useState(false);
 
   const localPlayer = state.players.find(p => p.id === state.localPlayerId);
   if (!localPlayer) return null;
@@ -241,6 +242,56 @@ export default function HUD({ state }: HUDProps) {
           }}>
             💀 {state.bodies.length} тел
           </div>
+        </div>
+      )}
+
+      {/* ── §13.1 "Что делать?" objective button ── */}
+      {localPlayer.isAlive && (
+        <div style={{ position: 'absolute', top: 100, right: 12, pointerEvents: 'all' }}>
+          <button
+            onClick={() => setShowObjective(o => !o)}
+            style={{
+              background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 8, padding: '5px 10px',
+              fontSize: 10, color: '#ccc', cursor: 'pointer',
+            }}
+          >
+            ❓ Что делать?
+          </button>
+          {showObjective && (
+            <div style={{
+              position: 'absolute', top: 34, right: 0,
+              background: 'rgba(10,10,20,0.97)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 12, padding: '12px 14px',
+              width: 220, fontSize: 11, color: '#ccc', lineHeight: 1.6,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.8)',
+              zIndex: 50,
+            }}>
+              {isSlivshchik ? (
+                <>
+                  <div style={{ color: '#F44336', fontWeight: 'bold', marginBottom: 6 }}>🪣 Ты — Сливщик</div>
+                  <div>• Подойди к машине [удерживай E] → сливай бензин</div>
+                  <div>• Подними канистру после слива</div>
+                  <div>• Выброси канистру у мусорки</div>
+                  <div>• Делай вид, что выполняешь задачи</div>
+                  <div>• Вызывай диверсии через кнопку 🔧</div>
+                  <div>• Устраивай засаду, когда никого нет рядом</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ color: '#4CAF50', fontWeight: 'bold', marginBottom: 6 }}>🏠 Ты — Хозяин</div>
+                  <div>• Выполняй задачи → заполняй метр единства</div>
+                  <div>• Следи за уровнем бензина в машинах</div>
+                  <div>• Подойди к арке [E] → вызвать сходку</div>
+                  <div>• На сходке — голосуй за подозреваемых</div>
+                  <div>• Выгони всех сливщиков или доведи метр до 100%</div>
+                </>
+              )}
+              <div style={{ marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 6, fontSize: 9, color: '#616161' }}>
+                Нажми снова чтобы закрыть
+              </div>
+            </div>
+          )}
         </div>
       )}
 
