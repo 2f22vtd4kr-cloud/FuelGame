@@ -45,15 +45,18 @@ function Minimap({ state }: { state: GameState }) {
 
       {/* Cars */}
       {state.cars.map(car => (
-        <div key={car.id} style={{
-          position: 'absolute',
-          left: car.pos.x * MM_SX - 3,
-          top: car.pos.y * MM_SY - 2,
-          width: 6, height: 4,
-          background: car.fuel < 10 ? '#FF1744' : car.fuel < 30 ? '#FF9800' : car.color,
-          borderRadius: 1,
-          opacity: 0.9,
-        }} />
+        <div key={car.id}
+          className={car.fuel < 10 ? 'mm-car-low-fuel' : undefined}
+          style={{
+            position: 'absolute',
+            left: car.pos.x * MM_SX - 3,
+            top: car.pos.y * MM_SY - 2,
+            width: 6, height: 4,
+            background: car.fuel < 10 ? '#FF1744' : car.fuel < 30 ? '#FF9800' : car.color,
+            borderRadius: 1,
+            opacity: 0.9,
+          }}
+        />
       ))}
 
       {/* Tasks (incomplete only) */}

@@ -28,6 +28,11 @@ const COLORS = {
   bodyOutline:  '#78909C',
 };
 
+// ─── §2.2 Camera smoothing state (lerp at 0.15 per frame ≈ 15% per frame @60fps)
+let _camSmoothX = -1; // -1 signals "uninitialised — snap on first frame"
+let _camSmoothY = -1;
+const CAM_LERP = 0.15;
+
 // ─── Main render ──────────────────────────────────────────────────────────────
 
 export function renderGame(
@@ -39,9 +44,21 @@ export function renderGame(
   const localPlayer = state.players.find(p => p.id === state.localPlayerId);
   if (!localPlayer) return;
 
-  // ── Camera: centre on local player ──────────────────────────────────────────
-  const camX = Math.round(localPlayer.pos.x - cw / 2);
-  const camY = Math.round(localPlayer.pos.y - ch / 2);
+  // ── §2.2 Camera: smoothly follow local player with lerp at 0.15 ─────────────
+  const targetCamX = localPlayer.pos.x - cw / 2;
+  const targetCamY = localPlayer.pos.y - ch / 2;
+
+  // Snap on first render or when switching phases (lobby → play)
+  if (_camSmoothX === -1 || state.phase === 'briefing') {
+    _camSmoothX = targetCamX;
+    _camSmoothY = targetCamY;
+  } else {
+    _camSmoothX += (targetCamX - _camSmoothX) * CAM_LERP;
+    _camSmoothY += (targetCamY - _camSmoothY) * CAM_LERP;
+  }
+
+  const camX = Math.round(_camSmoothX);
+  const camY = Math.round(_camSmoothY);
 
   ctx.save();
   ctx.translate(-camX, -camY);

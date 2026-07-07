@@ -126,3 +126,13 @@
     cursor: pointer;
   }
 }
+
+/* §2.6 Low-fuel minimap car icon — pulse red to draw Хозяина attention */
+@keyframes mm-car-low-fuel {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(1.5); }
+}
+.mm-car-low-fuel {
+  animation: mm-car-low-fuel 0.7s ease-in-out infinite;
+  transform-origin: center;
+}

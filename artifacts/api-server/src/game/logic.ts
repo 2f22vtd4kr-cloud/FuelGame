@@ -515,12 +515,14 @@ function completeTask(task: TaskInstance, player: Player): void {
 
   if (player.role === 'khozain') {
     gs.unityMeter = Math.min(100, gs.unityMeter + taskDef.unityReward);
+    // §2.1 Each completed task extends the match by 30 seconds (cap 10 min total)
+    gs.matchTimeLimit = Math.min(gs.matchTimeLimit + 30, 600);
     // §2.4 Shawarma speed boost — buying shawarma gives 10s speed boost
     if (task.defKey === 'shawarma') {
       player.speedBoostTimer = SHAWARMA_SPEED_BOOST_DURATION;
       setPrompt(`🌯 Шаверма куплена! +${taskDef.unityReward}% единства. Скорость ×1.35 на 10с! 🏃`, 3);
     } else {
-      setPrompt(`✅ ${taskDef.label} — +${taskDef.unityReward}% единства!`, 3);
+      setPrompt(`✅ ${taskDef.label} — +${taskDef.unityReward}% единства! +30с`, 3);
     }
   } else {
     // Slivshchik faking tasks
@@ -1072,7 +1074,25 @@ function updateSiphoning(dt: number): void {
         }
       }
     } else if (car.siphonPhase === 2) {
+      const fuelBefore = car.fuel;
       car.fuel = Math.max(0, car.fuel - SIPHON_RATE * dt);
+      // §9.1 Track per-player fuel siphoned stat
+      if (siphoner) siphoner.fuelSiphoned += (fuelBefore - car.fuel);
+
+      // §2.6 Low-fuel warning: one-shot notification to local Хозяин when car < 10%
+      if (!car.lowFuelWarned && car.fuel < 10 && car.fuel > 0) {
+        car.lowFuelWarned = true;
+        const localPlayer = gs.players.find(p => p.id === gs.localPlayerId);
+        if (localPlayer?.role === 'khozain') {
+          const colorName =
+            car.color === '#E53935' ? 'Красная' :
+            car.color === '#1565C0' ? 'Синяя'  :
+            car.color === '#2E7D32' ? 'Зелёная' : 'Машина';
+          setPrompt(`⛽ ${colorName} машина почти пуста! Меньше 10%!`, 4);
+          audio.play('alarm_button');
+        }
+      }
+
       if (car.fuel <= 0) {
         if (siphoner.isHuman) audio.play('siphon_complete');
         dropCanister(siphoner, car, true);

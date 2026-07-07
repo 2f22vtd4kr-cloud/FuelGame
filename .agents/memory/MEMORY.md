@@ -16,3 +16,4 @@
 - [95-Y Economy & Progression](game-economy-progression.md) — §3.2/§3.3/§3.5/§3.6 Бабки+XP+daily+achievements; localStorage profile; update stats BEFORE checkAchievements to avoid double-count; correctVotes tracked in resolveMeeting()
 - [95-Y Leaderboard & Shop](game-leaderboard-shop.md) — §3.4/§9.3/§10.3 done; leaderboard_entries table (no FK); POST /api/leaderboard upserts by deviceId; ShopTab has Stars flow via window.Telegram.WebApp.openInvoice; Lobby has 3 tabs (game/shop/leaderboard)
 - [95-Y viral mechanics and tutorial](game-viral-tutorial.md) — §9.4 share prompts + friend invite deep link (+ startapp consumption); §12.4 4-step Tutorial.tsx; §3.5 daily-exclusive hats; isFirstWin detection in rewards.ts
+- [95-Y session 9 gaps](game-session9-gaps.md) — interpolation ring buffer, Stars backend invoice, camera lerp, api-server +30s task extension, low-fuel warning

@@ -126,6 +126,7 @@ export function startGame(
     siphonTimer: 0,
     hasImmunity: false,
     immunityTimer: 0,
+    lowFuelWarned: false,
   }));
 
   const tasks: TaskInstance[] = TASK_SPAWNS.map(ts => ({
@@ -286,6 +287,7 @@ export function startGameMultiplayer(
     siphonTimer: 0,
     hasImmunity: false,
     immunityTimer: 0,
+    lowFuelWarned: false,
   }));
 
   const tasks: TaskInstance[] = TASK_SPAWNS.map(ts => ({

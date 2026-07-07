@@ -56,27 +56,47 @@ export default function ShopTab({ onProfileChange }: Props) {
     showToast(`Куплено: ${hat.name}!`, true);
   }
 
-  function buyWithStars(hat: HatDef) {
+  async function buyWithStars(hat: HatDef) {
     // §10.3 Telegram Stars flow
     const tg = window.Telegram?.WebApp;
     if (!tg?.openInvoice) {
       showToast('Открой игру через Telegram для покупки ⭐', false);
       return;
     }
-    // Telegram invoice slug would be pre-created on the server per-item.
-    // For now we use a predictable slug pattern: hat_{id}_{stars}
+
+    const onPaid = () => {
+      const p = loadProfile();
+      if (!p.purchasedHats.includes(hat.id)) p.purchasedHats.push(hat.id);
+      p.equippedHat = hat.id;
+      saveProfile(p);
+      refresh();
+      showToast(`${hat.name} куплена за ⭐!`, true);
+    };
+
+    // Try to get a proper invoice link from the backend (§10.3)
+    try {
+      const res = await fetch('/api/stars/invoice', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemType: 'hat', itemId: hat.id, stars: hat.cost, name: hat.name }),
+      });
+      if (res.ok) {
+        const { invoiceLink } = await res.json() as { invoiceLink: string };
+        tg.openInvoice(invoiceLink, (status: string) => {
+          if (status === 'paid') onPaid();
+          else if (status === 'cancelled') showToast('Покупка отменена', false);
+        });
+        return;
+      }
+    } catch {
+      // Backend unavailable — fall through to slug path
+    }
+
+    // Fallback: client-side slug (works only if Telegram resolves it)
     const slug = `hat_${hat.id}_${hat.cost}`;
     tg.openInvoice(slug, (status: string) => {
-      if (status === 'paid') {
-        const p = loadProfile();
-        if (!p.purchasedHats.includes(hat.id)) p.purchasedHats.push(hat.id);
-        p.equippedHat = hat.id;
-        saveProfile(p);
-        refresh();
-        showToast(`${hat.name} куплена за ⭐!`, true);
-      } else if (status === 'cancelled') {
-        showToast('Покупка отменена', false);
-      }
+      if (status === 'paid') onPaid();
+      else if (status === 'cancelled') showToast('Покупка отменена', false);
     });
   }
 

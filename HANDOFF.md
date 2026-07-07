@@ -1,6 +1,6 @@
 # 95-Й Бакстаб — Session Handoff
 
-> Design bible: `attached_assets/1_Game_DOC_1783458615419.md` (1992 lines, §00–§17, source of truth)
+> Design bible: `attached_assets/1_Game_DOC_1783461798879.md` (1992 lines, §00–§17, source of truth)
 
 ---
 
@@ -170,11 +170,20 @@ Behavior tree, Сливщик AI (siphon/ambush/sabotage/fake-task), Хозяи�
 |---|---|---|
 | 🔴 High | No sprite art — emoji circles only | §7.3 |
 | 🔴 High | No Redis — rooms lost on server restart | §6.4 |
-| 🟡 Medium | Telegram Stars backend invoice endpoint | §10.3 |
 | 🟡 Medium | Fuel ticket bot webhook / account-linking automation | §10.2 |
+| 🟡 Medium | Telegram Stars entitlement not server-verified (client-trusted onPaid) | §10.3 |
 | 🟢 Low | Seasonal events (New Year, 1 Sept, Масленица map reskins) | §11.2 |
 | 🟢 Low | Ejection cinematic — text overlay, not sprite animation | §7.4 |
-| 🟢 Low | Client interpolation of remote players unconfirmed | §5.3 |
+
+## Recently closed gaps (this session)
+
+| Fixed | What | Section |
+|---|---|---|
+| ✅ | §5.3 Remote player interpolation — 100ms delay ring buffer + lerp in `network.ts` | §5.3 |
+| ✅ | §10.3 Telegram Stars backend invoice endpoint — `POST /api/stars/invoice` calls Bot API `createInvoiceLink`; ShopTab calls backend first, falls back to client slug | §10.3 |
+| ✅ | §2.1 Multiplayer match timer `+30s` per task (was missing in `api-server/logic.ts::completeTask`) | §2.1 |
+| ✅ | §2.2 Camera lerp smoothing at 0.15/frame in `renderer.ts` (was hard-snap) | §2.2 |
+| ✅ | §2.6 Low-fuel warning — one-shot `⛽ <Color> машина почти пуста!` prompt + alarm SFX when any car drops below 10% fuel; `Car.lowFuelWarned` flag prevents repeat; Хозяева only | §2.6 |
 
 ---
 

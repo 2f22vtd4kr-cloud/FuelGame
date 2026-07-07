@@ -116,8 +116,8 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
         // Send our input to the server every frame
         network.sendInput(inp);
 
-        // Apply latest server state to gs (if a new one arrived)
-        network.applyLatestState();
+        // §5.3 Apply server state with remote-player interpolation
+        network.applyLatestState(performance.now());
 
         // After applying server state, restore our localPlayerId
         if (myPlayerId) gs.localPlayerId = myPlayerId;

@@ -191,6 +191,7 @@ export interface Car {
   siphonTimer: number;       // elapsed seconds in current phase
   hasImmunity: boolean;
   immunityTimer: number;
+  lowFuelWarned: boolean;    // §2.6 one-shot <10% warning already fired
 }
 
 // ─── Players ──────────────────────────────────────────────────────────────────

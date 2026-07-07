@@ -1655,6 +1655,21 @@ function updateSiphoning(dt: number): void {
       car.fuel = Math.max(0, car.fuel - SIPHON_RATE * dt);
       // §9.1 Track per-player fuel siphoned stat
       if (siphoner) siphoner.fuelSiphoned += (fuelBefore - car.fuel);
+
+      // §2.6 Low-fuel warning: one-shot notification to Хозяева when car < 10%
+      if (!car.lowFuelWarned && car.fuel < 10 && car.fuel > 0) {
+        car.lowFuelWarned = true;
+        const localPlayer = gs.players.find(p => p.id === gs.localPlayerId);
+        if (localPlayer?.role === 'khozain') {
+          const colorName =
+            car.color === '#E53935' ? 'Красная' :
+            car.color === '#1565C0' ? 'Синяя'  :
+            car.color === '#2E7D32' ? 'Зелёная' : 'Машина';
+          setPrompt(`⛽ ${colorName} машина почти пуста! Меньше 10%!`, 4);
+          audio.play('alarm_button');
+        }
+      }
+
       if (car.fuel <= 0) {
         if (siphoner.isHuman) audio.play('siphon_complete');
         dropCanister(siphoner, car, true);
