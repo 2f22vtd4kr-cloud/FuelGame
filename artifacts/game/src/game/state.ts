@@ -48,16 +48,15 @@ export function startGame(
   shuffle(botCharKeys);
   const allChars = [charKey, ...botCharKeys.slice(0, playerCount - 1)];
 
-  // Assign roles: first player is human; bots assigned randomly
-  const roleAssign = Array.from({ length: playerCount }, (_, i) =>
-    i === 0 ? 'khozain' : 'khozain'
-  ) as Array<'khozain' | 'slivshchik'>;
-
-  // Randomly assign siphoner roles to bots
-  const botIndices = Array.from({ length: playerCount - 1 }, (_, i) => i + 1);
-  shuffle(botIndices);
+  // Assign roles randomly across all players (human included)
+  const roleAssign: Array<'khozain' | 'slivshchik'> = Array.from(
+    { length: playerCount },
+    () => 'khozain' as const,
+  );
+  const allIndices = Array.from({ length: playerCount }, (_, i) => i);
+  shuffle(allIndices);
   for (let i = 0; i < siphonersCount; i++) {
-    roleAssign[botIndices[i]] = 'slivshchik';
+    roleAssign[allIndices[i]] = 'slivshchik';
   }
 
   const players: Player[] = allChars.map((ck, i) => {
