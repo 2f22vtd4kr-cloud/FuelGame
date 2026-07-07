@@ -4,6 +4,8 @@ import { gs, setGs, startGameMultiplayer, createInitialState } from './state';
 import type { HumanPlayerInfo } from './state';
 import { tickGameMulti, submitVote, submitSkipDiscussion, onMiniGameTap, onMiniGameDigitTap, onMiniGameChoice, onMiniGameTaxiTap, onMiniGameWireSource, onMiniGameWireSocket, cancelMiniGame, triggerEmote } from './logic';
 import type { LobbyPlayer } from './network-types';
+import { saveRoom, deleteRoom } from './roomStore';
+import type { PersistedRoom } from './roomStore';
 
 export interface ClientInfo {
   ws: WebSocket;
@@ -24,9 +26,16 @@ export class GameRoom {
   private tickInterval: ReturnType<typeof setInterval> | null = null;
   private broadcastInterval: ReturnType<typeof setInterval> | null = null;
   private quickStartTimeout: ReturnType<typeof setTimeout> | null = null;
+  private saveInterval: ReturnType<typeof setInterval> | null = null;
   private lastTickMs = Date.now();
 
   settings: { numPlayers: number; numSlivshchiki: number };
+
+  /**
+   * Set of playerIds that have ever been in this room (including disconnected ones).
+   * Used to validate reconnect requests.
+   */
+  knownPlayerIds: Set<string> = new Set();
 
   constructor(
     roomCode: string,
@@ -44,11 +53,79 @@ export class GameRoom {
     }
   }
 
+  // ── Restore from persisted snapshot ───────────────────────────────────────
+
+  /**
+   * Rehydrate a room from a Redis snapshot.
+   * Clients map starts empty — players reconnect via `reconnect` WS message.
+   * NOTE: does NOT restart intervals; those start in resumeGameLoopsIfNeeded()
+   * which is called when the first client reconnects.
+   */
+  static fromPersisted(data: PersistedRoom): GameRoom {
+    const room = new GameRoom(data.roomCode, data.hostPlayerId, data.settings, data.isQuickPlay);
+    room.gameStarted = data.gameStarted;
+    room.state = data.gameState;
+    // Populate knownPlayerIds from persisted metadata
+    for (const p of data.playerMeta) {
+      room.knownPlayerIds.add(p.playerId);
+    }
+    return room;
+  }
+
+  /** Snapshot the serialisable parts of this room for Redis. */
+  toPersistedData(): PersistedRoom {
+    const playerMeta = Array.from(this.clients.values()).map(c => ({
+      playerId: c.playerId,
+      character: c.character,
+      playerName: c.playerName,
+      isHost: c.playerId === this.hostPlayerId,
+    }));
+    return {
+      roomCode: this.roomCode,
+      hostPlayerId: this.hostPlayerId,
+      settings: this.settings,
+      isQuickPlay: this.isQuickPlay,
+      gameStarted: this.gameStarted,
+      playerMeta,
+      gameState: this.state,
+      savedAt: Date.now(),
+    };
+  }
+
+  persist(): void {
+    void saveRoom(this.toPersistedData());
+  }
+
+  /**
+   * Resume tick/broadcast/save intervals after a server restart when a client
+   * reconnects to an in-progress game. Safe to call multiple times — it checks
+   * that intervals are not already running.
+   */
+  resumeGameLoopsIfNeeded(): void {
+    if (!this.gameStarted) return;
+    if (this.tickInterval !== null) return; // already running
+
+    this.lastTickMs = Date.now();
+
+    this.tickInterval = setInterval(() => {
+      const now = Date.now();
+      const dt = Math.min((now - this.lastTickMs) / 1000, 0.05);
+      this.lastTickMs = now;
+      this.tick(dt);
+    }, 16);
+
+    this.broadcastInterval = setInterval(() => {
+      this.broadcast({ type: 'state', gs: this.state });
+    }, 50);
+
+    this.saveInterval = setInterval(() => {
+      this.persist();
+    }, 5000);
+  }
+
   // ── Quick Play auto-start countdown ────────────────────────────────────────
 
   private scheduleQuickStart(): void {
-    // §5.5 Quick Play: server auto-starts after a 5-second countdown.
-    // Runs entirely server-side so it works regardless of which client is "host".
     let secs = 5;
     const tick = () => {
       if (this.gameStarted) return;
@@ -67,6 +144,7 @@ export class GameRoom {
 
   addClient(info: ClientInfo): void {
     this.clients.set(info.playerId, info);
+    this.knownPlayerIds.add(info.playerId);
     this.inputs.set(info.playerId, {
       dx: 0, dy: 0,
       interact: false, prevInteract: false,
@@ -74,9 +152,24 @@ export class GameRoom {
       emoteIndex: null,
     });
     this.broadcastLobbyState();
+    this.persist();
+
+    // If this is a reconnect to an in-progress game, resume the game loops
+    this.resumeGameLoopsIfNeeded();
   }
 
-  removeClient(playerId: string): void {
+  /**
+   * Remove a client from the room.
+   * @param ws — if supplied, only remove the client if its WebSocket still matches.
+   *             This prevents a stale close-event from evicting a newly reconnected client.
+   */
+  removeClient(playerId: string, ws?: WebSocket): void {
+    const existing = this.clients.get(playerId);
+
+    // Guard: a reconnect may have already replaced this socket.
+    // If the ws we're being asked to remove is no longer the registered one, bail.
+    if (ws && existing && existing.ws !== ws) return;
+
     this.clients.delete(playerId);
     this.inputs.delete(playerId);
 
@@ -85,14 +178,12 @@ export class GameRoom {
       return;
     }
 
-    // If game is running, mark the player as dead/disconnected so they
-    // don't block win-condition counts and stop moving.
     if (this.gameStarted) {
       setGs(this.state);
       const p = gs.players.find(pl => pl.id === playerId);
       if (p) {
-        p.isAlive = false;    // removes from living count / win-condition checks
-        p.isHuman = false;    // prevents interaction loops from stalling
+        p.isAlive = false;
+        p.isHuman = false;
       }
       this.state = gs;
       this.broadcast({
@@ -101,7 +192,6 @@ export class GameRoom {
         playerName: p?.name ?? '',
       });
     } else {
-      // In lobby: reassign host if the host left
       if (playerId === this.hostPlayerId) {
         const next = this.clients.values().next().value as ClientInfo | undefined;
         if (next) {
@@ -111,6 +201,7 @@ export class GameRoom {
       }
       this.broadcastLobbyState();
     }
+    this.persist();
   }
 
   get isEmpty(): boolean {
@@ -123,7 +214,6 @@ export class GameRoom {
     if (this.gameStarted) return;
     this.gameStarted = true;
 
-    // Cancel any pending quick-start timer (in case of manual start)
     if (this.quickStartTimeout) {
       clearTimeout(this.quickStartTimeout);
       this.quickStartTimeout = null;
@@ -139,30 +229,20 @@ export class GameRoom {
     startGameMultiplayer(humanPlayers, this.settings.numPlayers, this.settings.numSlivshchiki);
     this.state = gs;
 
-    // Tell each client its player ID and that the game is starting
     for (const [playerId, client] of this.clients) {
       this.sendTo(client.ws, { type: 'game_started', yourPlayerId: playerId });
     }
 
-    // 60fps tick
-    this.lastTickMs = Date.now();
-    this.tickInterval = setInterval(() => {
-      const now = Date.now();
-      const dt = Math.min((now - this.lastTickMs) / 1000, 0.05);
-      this.lastTickMs = now;
-      this.tick(dt);
-    }, 16);
-
-    // Broadcast at 20Hz
-    this.broadcastInterval = setInterval(() => {
-      this.broadcast({ type: 'state', gs: this.state });
-    }, 50);
+    this.resumeGameLoopsIfNeeded();
+    this.persist();
   }
 
   stop(): void {
     if (this.tickInterval) { clearInterval(this.tickInterval); this.tickInterval = null; }
     if (this.broadcastInterval) { clearInterval(this.broadcastInterval); this.broadcastInterval = null; }
     if (this.quickStartTimeout) { clearTimeout(this.quickStartTimeout); this.quickStartTimeout = null; }
+    if (this.saveInterval) { clearInterval(this.saveInterval); this.saveInterval = null; }
+    void deleteRoom(this.roomCode);
   }
 
   // ── Tick ──────────────────────────────────────────────────────────────────

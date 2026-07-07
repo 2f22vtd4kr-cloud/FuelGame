@@ -21,7 +21,7 @@ export interface NetworkCallbacks {
   onRoomCreated?: (roomCode: string, playerId: string) => void;
   onRoomJoined?: (roomCode: string, playerId: string, isQuickPlay?: boolean) => void;
   onLobbyUpdate?: (players: LobbyPlayer[], roomCode: string, hostId: string) => void;
-  onGameStarted?: (yourPlayerId: string) => void;
+  onGameStarted?: (yourPlayerId: string, reconnected?: boolean) => void;
   onPlayerDisconnected?: (playerId: string, playerName: string) => void;
   onHostChanged?: (newHostId: string) => void;
   onError?: (message: string) => void;
@@ -30,6 +30,45 @@ export interface NetworkCallbacks {
   onQueueUpdate?: (count: number, total: number) => void;
   /** §5.5 Quick Play — server countdown before auto-start (seconds remaining). */
   onQuickCountdown?: (seconds: number) => void;
+}
+
+// ─── Persisted session (localStorage) ────────────────────────────────────────
+
+export interface PersistedSession {
+  roomCode: string;
+  playerId: string;
+  character: string;
+  playerName: string;
+  gameStarted: boolean;
+  savedAt: number;
+}
+
+const SESSION_KEY = '95y_mp_session';
+const SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+export function saveSession(s: PersistedSession): void {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...s, savedAt: Date.now() }));
+  } catch { /* storage full — not critical */ }
+}
+
+export function loadSession(): PersistedSession | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as PersistedSession;
+    if (Date.now() - s.savedAt > SESSION_TTL_MS) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return s;
+  } catch {
+    return null;
+  }
+}
+
+export function clearSession(): void {
+  try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
 }
 
 // ─── GameNetwork ──────────────────────────────────────────────────────────────
@@ -90,6 +129,11 @@ export class GameNetwork {
 
   joinRoom(opts: { roomCode: string; character: string; playerName: string }): void {
     this.send({ type: 'join', ...opts });
+  }
+
+  /** Reconnect to an existing room after a server restart. */
+  reconnectRoom(opts: { roomCode: string; playerId: string; character: string; playerName: string }): void {
+    this.send({ type: 'reconnect', ...opts });
   }
 
   /** §5.5 Join the Quick Play matchmaking queue. Server auto-creates a room when QUICK_MATCH_SIZE players are waiting. */
@@ -223,7 +267,7 @@ export class GameNetwork {
       case 'room_joined':
         this.myPlayerId = msg['playerId'] as string;
         this.roomCode = msg['roomCode'] as string;
-        this.stateHistory = []; // clear stale cross-session snapshots
+        if (!msg['reconnected']) this.stateHistory = []; // clear stale cross-session snapshots
         this.callbacks.onRoomJoined?.(
           msg['roomCode'] as string,
           msg['playerId'] as string,
@@ -239,8 +283,8 @@ export class GameNetwork {
         break;
       case 'game_started':
         this.myPlayerId = msg['yourPlayerId'] as string;
-        this.stateHistory = []; // fresh slate — no cross-match interpolation artifacts
-        this.callbacks.onGameStarted?.(msg['yourPlayerId'] as string);
+        if (!msg['reconnected']) this.stateHistory = []; // fresh slate — no cross-match interpolation artifacts
+        this.callbacks.onGameStarted?.(msg['yourPlayerId'] as string, Boolean(msg['reconnected']));
         break;
       case 'state': {
         // §5.3 Push into ring buffer with arrival timestamp

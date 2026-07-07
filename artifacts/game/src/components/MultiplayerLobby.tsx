@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { CharacterKey } from '../game/types';
 import { CHARACTERS, CHARACTER_KEYS } from '../data/characters';
-import { GameNetwork } from '../game/network';
+import { GameNetwork, saveSession, loadSession, clearSession } from '../game/network';
 import type { LobbyPlayer } from '../game/network';
 
 type Screen = 'menu' | 'queueing' | 'waiting';
@@ -96,19 +96,30 @@ export default function MultiplayerLobby({ onGameStarted, onBack, initialJoinCod
     isQuickPlayRef.current = false;
 
     const net = new GameNetwork({
-      onRoomCreated(code, _id) {
+      onRoomCreated(code, id) {
         setRoomCode(code);
         setAmHost(true);
         setScreen('waiting');
         setConnecting(false);
+        // Persist session for reconnect
+        saveSession({
+          roomCode: code, playerId: id,
+          character, playerName: effectiveName,
+          gameStarted: false, savedAt: Date.now(),
+        });
       },
-      onRoomJoined(code, _id, isQuickPlay) {
+      onRoomJoined(code, id, isQuickPlay) {
         setRoomCode(code);
         setAmHost(false);
         isQuickPlayRef.current = Boolean(isQuickPlay);
         setScreen('waiting');
         setConnecting(false);
-        if (isQuickPlay) setQueueCount(0); // clear queue display
+        if (isQuickPlay) setQueueCount(0);
+        saveSession({
+          roomCode: code, playerId: id,
+          character, playerName: effectiveName,
+          gameStarted: false, savedAt: Date.now(),
+        });
       },
       onLobbyUpdate(players, _code, hostId) {
         setLobbyPlayers(players);
@@ -116,6 +127,14 @@ export default function MultiplayerLobby({ onGameStarted, onBack, initialJoinCod
       },
       onGameStarted(yourPlayerId) {
         gameStartedRef.current = true;
+        // Mark session as in-progress so reconnect knows to skip lobby
+        if (net.roomCode) {
+          saveSession({
+            roomCode: net.roomCode, playerId: yourPlayerId,
+            character, playerName: effectiveName,
+            gameStarted: true, savedAt: Date.now(),
+          });
+        }
         onGameStarted(net, yourPlayerId);
       },
       onQueueUpdate(count, total) {
@@ -129,11 +148,16 @@ export default function MultiplayerLobby({ onGameStarted, onBack, initialJoinCod
         setError(msg);
         setConnecting(false);
         setScreen('menu');
+        clearSession();
       },
       onClose() {
-        setError('Соединение с сервером потеряно');
-        setScreen('menu');
-        setConnecting(false);
+        if (!gameStartedRef.current) {
+          setError('Соединение с сервером потеряно');
+          setScreen('menu');
+          setConnecting(false);
+          clearSession();
+        }
+        // If game had started, session remains in localStorage for reconnect
       },
     });
 
@@ -141,6 +165,19 @@ export default function MultiplayerLobby({ onGameStarted, onBack, initialJoinCod
     setNetwork(net);
     onCreate(net);
     return net;
+  }
+
+  // ── Auto-reconnect on mount ───────────────────────────────────────────────
+
+  function handleReconnect(session: NonNullable<ReturnType<typeof loadSession>>): void {
+    buildNetwork(net => {
+      net.reconnectRoom({
+        roomCode: session.roomCode,
+        playerId: session.playerId,
+        character: session.character,
+        playerName: session.playerName,
+      });
+    });
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -183,6 +220,17 @@ export default function MultiplayerLobby({ onGameStarted, onBack, initialJoinCod
   function handleStart(): void {
     network?.startGame();
   }
+
+  // ── Auto-reconnect banner (shown in menu screen) ─────────────────────────
+  const [pendingSession, setPendingSession] = useState<ReturnType<typeof loadSession> | null>(null);
+  const sessionCheckedRef = useRef(false);
+
+  useEffect(() => {
+    if (sessionCheckedRef.current) return;
+    sessionCheckedRef.current = true;
+    const s = loadSession();
+    if (s) setPendingSession(s);
+  }, []);
 
   // ── §5.5 Queueing screen ──────────────────────────────────────────────────
 
@@ -622,7 +670,49 @@ export default function MultiplayerLobby({ onGameStarted, onBack, initialJoinCod
         </div>
       )}
 
-      <button onClick={onBack} style={{ ...secondaryBtn, maxWidth: 380, width: '100%' }}>
+      {/* Reconnect banner */}
+      {pendingSession && (
+        <div style={{
+          width: '100%', maxWidth: 380,
+          background: 'rgba(76,175,80,0.15)',
+          border: '1px solid rgba(76,175,80,0.5)',
+          borderRadius: 12, padding: '14px 16px',
+          marginBottom: 14,
+        }}>
+          <div style={{ fontSize: 13, color: '#A5D6A7', fontWeight: 700, marginBottom: 6 }}>
+            🔄 Активная игра обнаружена
+          </div>
+          <div style={{ fontSize: 11, color: '#81C784', marginBottom: 10 }}>
+            Комната {pendingSession.roomCode} · {pendingSession.gameStarted ? 'игра идёт' : 'лобби'}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => { handleReconnect(pendingSession); setPendingSession(null); }}
+              style={{
+                flex: 2, padding: '10px',
+                background: 'linear-gradient(135deg, #4CAF50, #66BB6A)',
+                border: 'none', borderRadius: 8,
+                fontSize: 13, fontWeight: 700, color: '#FFF', cursor: 'pointer',
+              }}
+            >
+              ↩ Вернуться
+            </button>
+            <button
+              onClick={() => { clearSession(); setPendingSession(null); }}
+              style={{
+                flex: 1, padding: '10px',
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 8, fontSize: 12, color: '#9E9E9E', cursor: 'pointer',
+              }}
+            >
+              ✕ Нет
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button onClick={() => { onBack(); clearSession(); }} style={{ ...secondaryBtn, maxWidth: 380, width: '100%' }}>
         ← Назад
       </button>
     </div>

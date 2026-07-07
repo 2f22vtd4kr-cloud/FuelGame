@@ -19,3 +19,4 @@
 - [95-Y session 9 gaps](game-session9-gaps.md) — interpolation ring buffer, Stars backend invoice, camera lerp, api-server +30s task extension, low-fuel warning
 - [95-Y session 10 cosmetics/visuals](game-session10-cosmetics-visuals.md) — character silhouettes, pets/car skins shop, report button §5.6, neutral-role ejection text
 - [95-Y sprite art system](game-sprite-art.md) — 10 char + 6 car PNGs in public/sprites/; sprites.ts loader; renderer falls back to circles if not loaded; rotation = facingAngle + PI/2
+- [Redis persistence + daily leaderboard](redis-persistence.md) — ioredis room snapshots; game loops resume on first reconnect (not on restore); removeClient takes ws param to prevent reconnect-race eviction; knownPlayerIds set for reconnect auth

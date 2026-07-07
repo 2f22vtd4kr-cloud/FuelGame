@@ -1,7 +1,8 @@
 import { createServer } from 'http';
 import app from './app';
 import { logger } from './lib/logger';
-import { handleWsUpgrade } from './game/wsHandler';
+import { handleWsUpgrade, restoreRoomsFromRedis } from './game/wsHandler';
+import { connectRedis } from './lib/redis';
 
 const rawPort = process.env['PORT'];
 
@@ -26,6 +27,16 @@ server.on('upgrade', (req, socket, head) => {
   }
 });
 
-server.listen(port, () => {
-  logger.info({ port }, 'Server listening (HTTP + WebSocket)');
+// Boot sequence: Redis → restore rooms → start listening
+async function boot(): Promise<void> {
+  await connectRedis();
+  await restoreRoomsFromRedis();
+  server.listen(port, () => {
+    logger.info({ port }, 'Server listening (HTTP + WebSocket)');
+  });
+}
+
+boot().catch((err) => {
+  logger.error({ err }, 'Fatal startup error');
+  process.exit(1);
 });

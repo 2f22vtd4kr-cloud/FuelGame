@@ -18,6 +18,9 @@ if (process.env.DATABASE_URL) {
   import("./leaderboard").then(({ default: leaderboardRouter }) => {
     router.use(leaderboardRouter);
   });
+  import("./leaderboard-daily").then(({ default: dailyRouter }) => {
+    router.use(dailyRouter);
+  });
 }
 
 export default router;

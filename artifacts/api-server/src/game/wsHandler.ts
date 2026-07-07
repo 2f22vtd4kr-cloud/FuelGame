@@ -4,6 +4,7 @@ import type { IncomingMessage } from 'http';
 import type { Duplex } from 'stream';
 import { GameRoom } from './room';
 import { logger } from '../lib/logger';
+import { loadAllRooms } from './roomStore';
 
 // Valid character keys — must stay in sync with data/characters.ts
 const VALID_CHARACTERS = new Set([
@@ -26,7 +27,7 @@ function sanitizePlayerName(raw: unknown): string {
 }
 
 const wss = new WebSocketServer({ noServer: true });
-const rooms = new Map<string, GameRoom>();
+export const rooms = new Map<string, GameRoom>();
 
 function generateRoomCode(): string {
   // Unambiguous characters only (no 0/O, 1/I/L)
@@ -97,8 +98,6 @@ function tryFlushQueue(): void {
         playerName: entry.playerName,
       });
       // Tell each matched player their room code + ID.
-      // room_joined works for all (first player is also host, but in quick play
-      // the server drives auto-start so host privileges are not needed on client).
       if ((entry.ws.readyState as number) === 1) {
         entry.ws.send(JSON.stringify({
           type: 'room_joined',
@@ -113,6 +112,30 @@ function tryFlushQueue(): void {
 
     // Notify remaining queued players of updated count (if any left)
     broadcastQueueStatus();
+  }
+}
+
+// ── Startup: restore persisted rooms from Redis ─────────────────────────────
+
+export async function restoreRoomsFromRedis(): Promise<void> {
+  try {
+    const persisted = await loadAllRooms();
+    let restored = 0;
+    for (const data of persisted) {
+      // Skip rooms older than 2h or whose code already exists
+      if (rooms.has(data.roomCode)) continue;
+      const ageMs = Date.now() - data.savedAt;
+      if (ageMs > 2 * 60 * 60 * 1000) continue;
+
+      const room = GameRoom.fromPersisted(data);
+      rooms.set(data.roomCode, room);
+      restored++;
+    }
+    if (restored > 0) {
+      logger.info({ restored }, 'Restored rooms from Redis');
+    }
+  } catch (err) {
+    logger.warn({ err }, 'Failed to restore rooms from Redis');
   }
 }
 
@@ -146,7 +169,10 @@ wss.on('connection', (ws) => {
     }
 
     if (myRoom && myPlayerId) {
-      myRoom.removeClient(myPlayerId);
+      // Pass `ws` so removeClient can skip the removal if a reconnect has
+      // already replaced this socket with a new one (prevents the old close
+      // event from evicting the freshly reconnected client).
+      myRoom.removeClient(myPlayerId, ws);
       if (myRoom.isEmpty) {
         rooms.delete(myRoom.roomCode);
         logger.info({ roomCode: myRoom.roomCode }, 'Room destroyed (empty)');
@@ -206,6 +232,48 @@ wss.on('connection', (ws) => {
         break;
       }
 
+      // ── Reconnect after server restart ───────────────────────────────────
+      case 'reconnect': {
+        const rawCode = String(msg['roomCode'] ?? '').toUpperCase().slice(0, 4);
+        const requestedId = String(msg['playerId'] ?? '');
+        const room = rooms.get(rawCode);
+
+        if (!room) {
+          send({ type: 'error', message: 'Комната не найдена (возможно, истекла)' });
+          return;
+        }
+
+        // Security: only allow a playerId that was previously a known member of
+        // this room. This prevents strangers from claiming another player's ID.
+        if (!room.knownPlayerIds.has(requestedId)) {
+          send({ type: 'error', message: 'Неверный идентификатор игрока' });
+          return;
+        }
+
+        const playerId = requestedId;
+        myRoom = room;
+        myPlayerId = playerId;
+
+        room.addClient({
+          ws,
+          playerId,
+          character: sanitizeCharacter(msg['character']),
+          playerName: sanitizePlayerName(msg['playerName']),
+        });
+
+        if (room.gameStarted) {
+          // Game is already in progress — send game_started so client transitions
+          send({ type: 'game_started', yourPlayerId: playerId, reconnected: true });
+          // Immediately push the current state
+          send({ type: 'state', gs: room.state });
+        } else {
+          send({ type: 'room_joined', roomCode: rawCode, playerId, reconnected: true });
+        }
+
+        logger.info({ roomCode: rawCode, playerId, reconnected: true }, 'Player reconnected');
+        break;
+      }
+
       // ── §5.5 Quick Play: join matchmaking queue ──────────────────────────
       case 'quick_join': {
         if (myRoom) { send({ type: 'error', message: 'Уже в комнате' }); return; }
@@ -232,16 +300,7 @@ wss.on('connection', (ws) => {
         // Check if we now have enough to start a match
         tryFlushQueue();
 
-        // After flush, if this socket is now in a room (matched), wire myRoom
-        if (!myRoom) {
-          // Still in queue — myRoom stays null until match fires
-        } else {
-          // tryFlushQueue already called room.addClient, myRoom set below
-        }
-
         // Wire myRoom for disconnect cleanup once the match fires
-        // (addClient inside tryFlushQueue doesn't set myRoom for this closure,
-        //  so we look it up via playerId after flush)
         for (const [, room] of rooms) {
           if (room.clients.has(myPlayerId)) {
             myRoom = room;
