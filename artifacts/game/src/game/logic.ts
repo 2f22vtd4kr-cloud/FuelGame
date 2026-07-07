@@ -543,9 +543,19 @@ export function callMeeting(callerId: string, reason: 'alarm' | 'body' | 'draine
     car.siphoner = null; car.siphonPhase = 0; car.siphonTimer = 0;
   }
   for (const task of gs.tasks) task.doer = null;
+  // Drop carried canisters on the ground so they remain as evidence (§2.4)
+  // Must check the flag BEFORE clearing it.
   for (const p of gs.players) {
     if (!p.isAlive) continue;
-    p.isCarryingCanister = false; // set down evidence at meeting
+    if (p.isCarryingCanister) {
+      gs.canisters.push({
+        id: `can_dropped_${p.id}_${Date.now()}`,
+        pos: { ...p.pos },
+        ownerId: p.id,
+        isFull: false,
+      });
+    }
+    p.isCarryingCanister = false;
   }
 
   // Teleport alive players to meeting circle
@@ -615,6 +625,7 @@ function tickMeeting(dt: number): void {
 
 function castBotVotes(): void {
   const m = gs.meeting!;
+  const thisMeetingId = m.meetingId; // snapshot to detect stale timeouts
   const alivePlayers = gs.players.filter(p => p.isAlive);
 
   for (const bot of gs.players) {
@@ -623,7 +634,8 @@ function castBotVotes(): void {
 
     const delay = 2 + Math.random() * 12;
     setTimeout(() => {
-      if (!gs.meeting || gs.meeting.phase !== 'voting') return;
+      // Guard: discard vote if meeting ended, phase changed, or a new meeting started
+      if (!gs.meeting || gs.meeting.phase !== 'voting' || gs.meeting.meetingId !== thisMeetingId) return;
       const skipChance = bot.role === 'slivshchik' ? 0.1 : 0.2;
       if (Math.random() < skipChance) {
         gs.meeting.votes.push({ voterId: bot.id, targetId: null });

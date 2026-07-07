@@ -525,6 +525,19 @@ function drawPlayers(ctx: CanvasRenderingContext2D, state: GameState): void {
       ctx.arc(x, y, 20, -Math.PI / 2, -Math.PI / 2 + pct * Math.PI * 2);
       ctx.stroke();
     }
+
+    // §2.4 setup-phase warning: show ⚠️ above any siphoner in setup (phase 1)
+    // This is visible to ALL players who can see this player
+    const isInSetup = state.cars.some(c => c.siphoner === player.id && c.siphonPhase === 1);
+    if (isInSetup) {
+      ctx.font = '14px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 0.5 + 0.5 * Math.sin(Date.now() / 180);
+      ctx.fillText('⚠️', x, y - 32);
+      ctx.globalAlpha = 1;
+      ctx.textBaseline = 'alphabetic';
+    }
   }
 }
 

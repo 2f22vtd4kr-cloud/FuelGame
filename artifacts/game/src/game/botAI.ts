@@ -140,7 +140,32 @@ function updateSlivshchikBot(bot: Player, dt: number): void {
     return;
   }
 
-  // 2. Watched → do a fake task for cover
+  // 2. Watched while actively siphoning → interrupt and flee (§2.4)
+  // Must be checked BEFORE the generic watched→fake-task branch so the interacting
+  // state is handled correctly instead of silently falling through to fake-task.
+  if (isWatched && bot.botState === 'interacting') {
+    const car = gs.cars.find(c => c.id === bot.botCarId);
+    if (car && car.siphoner === bot.id) {
+      if (car.siphonPhase === 2) {
+        // Drop canister; bot immediately picks it up to dispose (§2.4)
+        gs.canisters.push({
+          id: `can_interrupt_${car.id}_${Date.now()}`,
+          pos: { ...bot.pos },
+          ownerId: bot.id,
+          isFull: false,
+        });
+        audio.play('canister_drop');
+        bot.isCarryingCanister = true;
+      }
+      // Apply 15-second cooldown (§2.4)
+      bot.siphonCooldown = 15;
+      car.siphoner = null; car.siphonPhase = 0; car.siphonTimer = 0;
+    }
+    bot.botCarId = null; bot.botState = 'fleeing'; bot.botCooldown = 2;
+    return;
+  }
+
+  // 3. Watched → do a fake task for cover
   if (isWatched) {
     if (bot.botState !== 'fake_task') {
       // Find a nearby task to fake
@@ -195,6 +220,10 @@ function updateSlivshchikBot(bot: Player, dt: number): void {
   if (bot.isCarryingCanister) {
     const nearDump = DUMPSTER_POSITIONS.some(dp => dist(bot.pos, dp) < 60);
     if (nearDump) {
+      // Remove this bot's canisters from world state so ground evidence disappears
+      for (let i = gs.canisters.length - 1; i >= 0; i--) {
+        if (gs.canisters[i].ownerId === bot.id) gs.canisters.splice(i, 1);
+      }
       bot.isCarryingCanister = false;
     } else {
       let nearest: { x: number; y: number } | null = null;
@@ -253,21 +282,9 @@ function updateSlivshchikBot(bot: Player, dt: number): void {
     if (dist(bot.pos, car.pos) > SIPHON_RADIUS + 5) {
       moveBot(bot, car.pos, dt);
     }
-    // Owner came close → flee
-    if (isWatched) {
-      if (car.siphonPhase === 2) {
-        // Drop canister
-        gs.canisters.push({
-          id: `can_${car.id}_${Date.now()}`,
-          pos: { ...bot.pos },
-          ownerId: bot.id,
-          isFull: false,
-        });
-        audio.play('canister_drop');
-      }
-      car.siphoner = null; car.siphonPhase = 0; car.siphonTimer = 0;
-      bot.botCarId = null; bot.botState = 'fleeing'; bot.botCooldown = 2;
-    }
+    // Note: watched-while-interacting interrupt is handled at the top of this
+    // function (before the generic isWatched fake-task branch) so it never
+    // reaches here in that scenario.
   }
 }
 
