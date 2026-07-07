@@ -7,7 +7,7 @@ import { logger } from '../lib/logger';
 
 // Valid character keys — must stay in sync with data/characters.ts
 const VALID_CHARACTERS = new Set([
-  'denis','anya','vova','dyadya','petrovich',
+  'denis','anya','vova','uncle_seryozha','petrovich',
   'marina','ahmet','oleg','lena','barsik',
 ]);
 

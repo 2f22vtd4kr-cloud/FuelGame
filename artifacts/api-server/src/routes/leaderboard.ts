@@ -64,9 +64,9 @@ router.post("/leaderboard", async (req, res) => {
       deviceId: deviceId ?? null,
     });
 
-    res.json({ success: true, action: "inserted" });
+    return res.json({ success: true, action: "inserted" });
   } catch (err) {
-    res.status(500).json({ error: "Failed to submit score" });
+    return res.status(500).json({ error: "Failed to submit score" });
   }
 });
 
