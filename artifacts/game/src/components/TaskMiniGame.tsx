@@ -1,6 +1,6 @@
 import type { MiniGameState, TaskDefKey } from '../game/types';
 import { TASK_DEFS } from '../data/tasks';
-import { onMiniGameTap, onMiniGameDigitTap, cancelMiniGame } from '../game/logic';
+import { onMiniGameTap, onMiniGameDigitTap, cancelMiniGame } from '../game/gameActions';
 
 interface Props {
   mg: MiniGameState;

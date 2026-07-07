@@ -1,63 +1,103 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import type { GameState } from './game/types';
 import { gs, resetGameState } from './game/state';
 import { CHARACTERS } from './data/characters';
+import { setActiveNetwork } from './game/gameActions';
+import { GameNetwork } from './game/network';
 import Lobby from './components/Lobby';
+import MultiplayerLobby from './components/MultiplayerLobby';
 import GameCanvas from './components/GameCanvas';
 import HUD from './components/HUD';
 import MeetingScreen from './components/MeetingScreen';
 import GameResults from './components/GameResults';
 
-type AppPhase = 'lobby' | 'briefing' | 'play' | 'meeting' | 'results';
+type AppPhase = 'lobby' | 'multiplayer' | 'briefing' | 'play' | 'meeting' | 'results';
 
 export default function App() {
   const [appPhase, setAppPhase] = useState<AppPhase>('lobby');
-  // Snapshot used for overlay components (meeting, results, HUD, briefing countdown)
-  const [snapshot, setSnapshot] = useState<GameState>(() => ({ ...gs, players: [], cars: [], tasks: [], meeting: null, briefingTimer: 0 }));
+  const [snapshot, setSnapshot] = useState<GameState>(() => ({
+    ...gs, players: [], cars: [], tasks: [], meeting: null, briefingTimer: 0,
+  }));
 
-  // Single source of truth: gs.phase drives all transitions via the 10Hz snapshot.
-  // gs.briefingTimer is the authoritative countdown — no duplicate React timer.
+  // Multiplayer network ref (null in single-player mode)
+  const networkRef = useRef<GameNetwork | null>(null);
+  const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
+
+  // ── Snapshot from game loop ────────────────────────────────────────────────
   const handleSnapshot = useCallback((snap: GameState) => {
     setSnapshot(snap);
     setAppPhase(prev => {
       const incoming = snap.phase as AppPhase;
-      if (incoming === 'lobby') return prev;   // never revert to lobby from snapshot
-      if (incoming !== prev) return incoming;
+      if (incoming === 'lobby') return prev;
+      if (incoming !== prev && ['briefing','play','meeting','results'].includes(incoming)) {
+        return incoming;
+      }
       return prev;
     });
   }, []);
 
+  // ── Single-player start ────────────────────────────────────────────────────
   const handleGameStart = useCallback(() => {
-    // startGame() was called by Lobby; gs.phase is now 'briefing'.
-    // GameCanvas mounts below and immediately starts ticking gs.briefingTimer down.
+    setMyPlayerId(null);
+    setActiveNetwork(null);
     setAppPhase('briefing');
   }, []);
 
+  // ── Multiplayer: game started (server tells us) ───────────────────────────
+  const handleMultiGameStarted = useCallback((network: GameNetwork, playerId: string) => {
+    networkRef.current = network;
+    setMyPlayerId(playerId);
+    setActiveNetwork(network);
+    setAppPhase('briefing');
+  }, []);
+
+  // ── Return to lobby ────────────────────────────────────────────────────────
   const handlePlayAgain = useCallback(() => {
+    if (networkRef.current) {
+      networkRef.current.close();
+      networkRef.current = null;
+    }
+    setActiveNetwork(null);
+    setMyPlayerId(null);
     resetGameState();
     setAppPhase('lobby');
   }, []);
 
   const isInGame = appPhase === 'briefing' || appPhase === 'play' || appPhase === 'meeting' || appPhase === 'results';
 
-  // For the briefing overlay: read role from gs directly (populated by startGame)
-  const localGsPlayer = gs.players.find(p => p.isHuman);
+  const localGsPlayer = gs.players.find(p => myPlayerId ? p.id === myPlayerId : p.isHuman);
   const roleIsSlivshchik = localGsPlayer?.role === 'slivshchik';
   const charDef = localGsPlayer ? CHARACTERS[localGsPlayer.character] : null;
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: '#0D1B0D', overflow: 'hidden' }}>
+
       {/* ── Lobby ── */}
       {appPhase === 'lobby' && (
-        <Lobby onStart={handleGameStart} />
+        <Lobby
+          onStart={handleGameStart}
+          onMultiplayer={() => setAppPhase('multiplayer')}
+        />
       )}
 
-      {/* ── Canvas (always mounted during active game; ticks game loop) ── */}
+      {/* ── Multiplayer lobby ── */}
+      {appPhase === 'multiplayer' && (
+        <MultiplayerLobby
+          onGameStarted={handleMultiGameStarted}
+          onBack={() => setAppPhase('lobby')}
+        />
+      )}
+
+      {/* ── Canvas (ticks game loop when in active game) ── */}
       {(appPhase === 'briefing' || appPhase === 'play' || appPhase === 'meeting') && (
-        <GameCanvas onStateSnapshot={handleSnapshot} />
+        <GameCanvas
+          onStateSnapshot={handleSnapshot}
+          network={networkRef.current}
+          myPlayerId={myPlayerId}
+        />
       )}
 
-      {/* ── §2.1 Briefing overlay (5s role-reveal cinematic) ── */}
+      {/* ── §2.1 Briefing overlay ── */}
       {appPhase === 'briefing' && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 50,
@@ -67,7 +107,6 @@ export default function App() {
           fontFamily: 'sans-serif',
           animation: 'fadeInBriefing 0.4s ease',
         }}>
-          {/* Role card */}
           <div style={{
             background: roleIsSlivshchik
               ? 'linear-gradient(160deg,#1a0000 0%,#3b0000 100%)'
@@ -77,7 +116,6 @@ export default function App() {
             textAlign: 'center', maxWidth: 340,
             boxShadow: `0 0 60px ${roleIsSlivshchik ? 'rgba(255,23,68,0.35)' : 'rgba(0,230,118,0.25)'}`,
           }}>
-            {/* Character emoji / color blob */}
             <div style={{
               width: 64, height: 64, borderRadius: '50%',
               background: charDef?.color ?? '#888',
@@ -96,22 +134,16 @@ export default function App() {
               ВЫ — {roleIsSlivshchik ? 'СЛИВЩИК' : 'ХОЗЯИН'}
             </div>
 
-            <div style={{
-              fontSize: 22, fontWeight: 900, marginBottom: 12,
-              color: '#fff',
-            }}>
+            <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 12, color: '#fff' }}>
               {localGsPlayer?.name ?? ''}
             </div>
 
-            <div style={{
-              fontSize: 12, color: '#ccc', lineHeight: 1.6, marginBottom: 20,
-            }}>
+            <div style={{ fontSize: 12, color: '#ccc', lineHeight: 1.6, marginBottom: 20 }}>
               {roleIsSlivshchik
                 ? 'Слей бензин из машин соседей.\nНе попадись. Устраняй свидетелей.'
                 : 'Следи за машинами. Вычисли Сливщика.\nСообщай на Сходке.'}
             </div>
 
-            {/* Key bindings reminder */}
             <div style={{
               background: 'rgba(255,255,255,0.07)', borderRadius: 8,
               padding: '8px 12px', fontSize: 10, color: '#bbb',
@@ -124,19 +156,14 @@ export default function App() {
             </div>
           </div>
 
-          {/* Countdown — driven by gs.briefingTimer via snapshot (single source of truth) */}
-          <div style={{
-            marginTop: 24, fontSize: 14, color: '#666', letterSpacing: 2,
-          }}>
+          <div style={{ marginTop: 24, fontSize: 14, color: '#666', letterSpacing: 2 }}>
             ИГРА НАЧНЁТСЯ ЧЕРЕЗ {Math.ceil(snapshot.briefingTimer || 0)}с...
           </div>
         </div>
       )}
 
-      {/* ── HUD overlay (play only) ── */}
-      {appPhase === 'play' && (
-        <HUD state={snapshot} />
-      )}
+      {/* ── HUD overlay ── */}
+      {appPhase === 'play' && <HUD state={snapshot} />}
 
       {/* ── Meeting overlay ── */}
       {appPhase === 'meeting' && snapshot.meeting && (

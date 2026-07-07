@@ -4,3 +4,4 @@
 - [95-Y vision system](game-vol1-vision.md) — §2.3 raycasting fog-of-war; VISION_BUILDINGS splits arch gap; teammate outlines drawn post-fog to pierce darkness
 - [95-Y mini-games and sabotage](game-minigames-sabotage.md) — §2.5 task mini-games + §2.9 sabotage system fully implemented
 - [95-Y Vol1 gap mechanics](game-vol1-gaps.md) — briefing/flowerbeds/dumpster-vent/siphon-audio/crouch-stealth; briefing uses gs.briefingTimer as single source of truth (no React timer)
+- [95-Y multiplayer](game-multiplayer.md) — WS at /api/ws; tickGameMulti 3-phase design avoids N× timer bugs; gameActions.ts proxy layer; room.ts handles disconnect/host-reassign

@@ -5,6 +5,7 @@ import { gs, startGame } from '../game/state';
 
 interface Props {
   onStart: () => void;
+  onMultiplayer: () => void;
 }
 
 const DIFFICULTY_LABELS: Record<BotDifficulty, { label: string; emoji: string; desc: string; color: string }> = {
@@ -14,7 +15,7 @@ const DIFFICULTY_LABELS: Record<BotDifficulty, { label: string; emoji: string; d
   nightmare: { label: 'Кошмар',    emoji: '💀', desc: 'Почти нереально',       color: '#9C27B0' },
 };
 
-export default function Lobby({ onStart }: Props) {
+export default function Lobby({ onStart, onMultiplayer }: Props) {
   const [selected, setSelected] = useState<CharacterKey>('denis');
   const [playerCount, setPlayerCount] = useState(6);
   const [siphonersCount, setSiphonersCount] = useState(2);
@@ -72,12 +73,8 @@ export default function Lobby({ onStart }: Props) {
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   gap: 2, padding: '8px 4px',
-                  background: isSelected
-                    ? `${c.color}33`
-                    : 'rgba(255,255,255,0.05)',
-                  border: isSelected
-                    ? `2px solid ${c.color}`
-                    : '2px solid transparent',
+                  background: isSelected ? `${c.color}33` : 'rgba(255,255,255,0.05)',
+                  border: isSelected ? `2px solid ${c.color}` : '2px solid transparent',
                   borderRadius: 10, cursor: 'pointer',
                   transition: 'all 0.15s',
                 }}
@@ -91,7 +88,6 @@ export default function Lobby({ onStart }: Props) {
           })}
         </div>
 
-        {/* Selected character info */}
         <div style={{
           background: `${charDef.color}22`,
           border: `1.5px solid ${charDef.color}66`,
@@ -117,7 +113,7 @@ export default function Lobby({ onStart }: Props) {
       <div style={{
         width: '100%', maxWidth: 380,
         background: 'rgba(255,255,255,0.05)',
-        borderRadius: 12, padding: '14px 16px', marginBottom: 20,
+        borderRadius: 12, padding: '14px 16px', marginBottom: 16,
       }}>
         <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 12, letterSpacing: 1 }}>
           НАСТРОЙКИ ИГРЫ
@@ -129,8 +125,7 @@ export default function Lobby({ onStart }: Props) {
               <span style={{ fontSize: 12, color: '#FFF' }}>Игроков (включая ботов)</span>
               <span style={{ fontSize: 12, color: '#FF5722', fontWeight: 'bold' }}>{playerCount}</span>
             </div>
-            <input
-              type="range" min={4} max={10} value={playerCount}
+            <input type="range" min={4} max={10} value={playerCount}
               onChange={e => {
                 const n = +e.target.value;
                 setPlayerCount(n);
@@ -145,8 +140,7 @@ export default function Lobby({ onStart }: Props) {
               <span style={{ fontSize: 12, color: '#FFF' }}>Сливщиков</span>
               <span style={{ fontSize: 12, color: '#F44336', fontWeight: 'bold' }}>{siphonersCount} 🪣</span>
             </div>
-            <input
-              type="range" min={1} max={Math.floor((playerCount - 1) / 2)}
+            <input type="range" min={1} max={Math.floor((playerCount - 1) / 2)}
               value={siphonersCount}
               onChange={e => setSiphonersCount(+e.target.value)}
               style={{ width: '100%', accentColor: '#F44336' }}
@@ -160,11 +154,9 @@ export default function Lobby({ onStart }: Props) {
           borderRadius: 8, fontSize: 11, color: '#9E9E9E', lineHeight: 1.4,
         }}>
           🏠 {playerCount - siphonersCount} хозяев vs 🪣 {siphonersCount} сливщик{siphonersCount === 1 ? '' : 'а'}
-          <br/>
-          Задача хозяев: заполни метр единства до 100% или выгони всех сливщиков.
+          <br/>Задача хозяев: заполни метр единства до 100% или выгони всех сливщиков.
         </div>
 
-        {/* Difficulty selector */}
         <div style={{ marginTop: 14 }}>
           <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 8, letterSpacing: 1 }}>
             СЛОЖНОСТЬ БОТОВ
@@ -174,20 +166,14 @@ export default function Lobby({ onStart }: Props) {
               const d = DIFFICULTY_LABELS[key];
               const isSelected = key === difficulty;
               return (
-                <button
-                  key={key}
-                  onClick={() => setDifficulty(key)}
-                  style={{
-                    background: isSelected ? `${d.color}22` : 'rgba(255,255,255,0.04)',
-                    border: `2px solid ${isSelected ? d.color : 'rgba(255,255,255,0.1)'}`,
-                    borderRadius: 8, padding: '8px 4px', cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                  }}
-                >
+                <button key={key} onClick={() => setDifficulty(key)} style={{
+                  background: isSelected ? `${d.color}22` : 'rgba(255,255,255,0.04)',
+                  border: `2px solid ${isSelected ? d.color : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: 8, padding: '8px 4px', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                }}>
                   <span style={{ fontSize: 18 }}>{d.emoji}</span>
-                  <span style={{ fontSize: 9, color: isSelected ? d.color : '#9E9E9E', fontWeight: isSelected ? 'bold' : 'normal', lineHeight: 1.2 }}>
-                    {d.label}
-                  </span>
+                  <span style={{ fontSize: 9, color: isSelected ? d.color : '#9E9E9E', fontWeight: isSelected ? 'bold' : 'normal', lineHeight: 1.2 }}>{d.label}</span>
                   <span style={{ fontSize: 8, color: '#616161', lineHeight: 1.1 }}>{d.desc}</span>
                 </button>
               );
@@ -200,7 +186,7 @@ export default function Lobby({ onStart }: Props) {
       <div style={{
         width: '100%', maxWidth: 380,
         background: 'rgba(255,255,255,0.03)',
-        borderRadius: 12, padding: '12px 14px', marginBottom: 20,
+        borderRadius: 12, padding: '12px 14px', marginBottom: 16,
         fontSize: 11, color: '#757575', lineHeight: 1.6,
       }}>
         <div style={{ color: '#9E9E9E', fontWeight: 'bold', marginBottom: 6, fontSize: 11, letterSpacing: 1 }}>
@@ -214,21 +200,30 @@ export default function Lobby({ onStart }: Props) {
         🪣 Сливщики: сливай баки и не попадайся!
       </div>
 
-      {/* Start button */}
-      <button
-        onClick={handleStart}
-        style={{
-          width: '100%', maxWidth: 380,
-          padding: '18px',
-          background: 'linear-gradient(135deg, #FF5722 0%, #FF8A65 100%)',
-          border: 'none', borderRadius: 16,
-          fontSize: 18, fontWeight: 900, color: '#FFF',
-          cursor: 'pointer', letterSpacing: 2,
-          boxShadow: '0 6px 24px rgba(255,87,34,0.5)',
-          textTransform: 'uppercase' as const,
-        }}
-      >
-        🎮 Играть
+      {/* Single-player button */}
+      <button onClick={handleStart} style={{
+        width: '100%', maxWidth: 380, padding: '18px',
+        background: 'linear-gradient(135deg, #FF5722 0%, #FF8A65 100%)',
+        border: 'none', borderRadius: 16,
+        fontSize: 18, fontWeight: 900, color: '#FFF',
+        cursor: 'pointer', letterSpacing: 2,
+        boxShadow: '0 6px 24px rgba(255,87,34,0.5)',
+        textTransform: 'uppercase' as const,
+        marginBottom: 10,
+      }}>
+        🎮 Играть (одиночная)
+      </button>
+
+      {/* Multiplayer button */}
+      <button onClick={onMultiplayer} style={{
+        width: '100%', maxWidth: 380, padding: '16px',
+        background: 'rgba(33,150,243,0.15)',
+        border: '2px solid rgba(33,150,243,0.5)',
+        borderRadius: 16, fontSize: 16, fontWeight: 700, color: '#64B5F6',
+        cursor: 'pointer', letterSpacing: 1,
+        boxShadow: '0 4px 16px rgba(33,150,243,0.2)',
+      }}>
+        🌐 Мультиплеер (с друзьями)
       </button>
 
       <div style={{ marginTop: 16, fontSize: 10, color: '#424242', textAlign: 'center' }}>

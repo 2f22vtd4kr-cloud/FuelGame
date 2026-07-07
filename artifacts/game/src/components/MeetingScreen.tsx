@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { GameState } from '../game/types';
 import { gs } from '../game/state';
-import { submitVote, triggerEmote } from '../game/logic';
+import { triggerEmote } from '../game/logic';
+import { submitVote } from '../game/gameActions';
 import { CHARACTERS } from '../data/characters';
 import { audio } from '../game/audio';
 
