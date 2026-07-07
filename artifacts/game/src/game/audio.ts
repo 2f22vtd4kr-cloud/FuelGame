@@ -35,18 +35,23 @@ class AudioManager {
     if (!this.c || !this.dest) return;
     try {
       switch (name) {
-        case 'task_complete':   this._taskComplete(); break;
-        case 'meeting_horn':    this._meetingHorn(); break;
-        case 'vote_cast':       this._voteCast(); break;
-        case 'ejection':        this._ejection(); break;
-        case 'body_found':      this._bodyFound(); break;
-        case 'ambush':          this._ambush(); break;
-        case 'siphon_complete': this._siphonComplete(); break;
-        case 'canister_drop':   this._canisterDrop(); break;
-        case 'win_owners':      this._winOwners(); break;
-        case 'win_slivshchiki': this._winSlivshchiki(); break;
-        case 'ui_click':        this._uiClick(); break;
-        case 'alarm_button':    this._alarmButton(); break;
+        case 'task_complete':     this._taskComplete(); break;
+        case 'meeting_horn':      this._meetingHorn(); break;
+        case 'vote_cast':         this._voteCast(); break;
+        case 'ejection':          this._ejection(); break;
+        case 'body_found':        this._bodyFound(); break;
+        case 'ambush':            this._ambush(); break;
+        case 'siphon_complete':   this._siphonComplete(); break;
+        case 'canister_drop':     this._canisterDrop(); break;
+        case 'canister_pickup':   this._canisterPickup(); break;
+        case 'win_owners':        this._winOwners(); break;
+        case 'win_slivshchiki':   this._winSlivshchiki(); break;
+        case 'ui_click':          this._uiClick(); break;
+        case 'alarm_button':      this._alarmButton(); break;
+        case 'pipe_burst_sfx':    this._pipeBurst(); break;
+        case 'chat_offline_sfx':  this._chatOffline(); break;
+        case 'alarm_chaos_sfx':   this._alarmChaos(); break;
+        case 'babushka_cerberus_sfx': this._babushkaCerberus(); break;
       }
     } catch { /* ignore synthesis errors */ }
   }
@@ -283,11 +288,123 @@ class AudioManager {
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
     osc.start(t); osc.stop(t + 0.08);
   }
+
+  // §8.2 canister_pickup — metallic clink (300→500Hz ping)
+  private _canisterPickup(): void {
+    const ctx = this.c!; const dest = this.dest!;
+    const t = ctx.currentTime;
+    [500, 700, 900].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(dest);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.18, t + i * 0.04);
+      g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.04 + 0.18);
+      osc.start(t + i * 0.04); osc.stop(t + i * 0.04 + 0.2);
+    });
+  }
+
+  // §8.2 pipe_burst — water rush + low rumble
+  private _pipeBurst(): void {
+    const ctx = this.c!; const dest = this.dest!;
+    const t = ctx.currentTime;
+    // White noise burst (water gush)
+    const bufSize = Math.floor(ctx.sampleRate * 0.8);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1);
+    const noise = ctx.createBufferSource();
+    const ng = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass'; filter.frequency.value = 800; filter.Q.value = 0.5;
+    noise.buffer = buf;
+    noise.connect(filter); filter.connect(ng); ng.connect(dest);
+    ng.gain.setValueAtTime(0.0, t);
+    ng.gain.linearRampToValueAtTime(0.4, t + 0.1);
+    ng.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+    noise.start(t); noise.stop(t + 0.85);
+    // Low thud
+    const osc = ctx.createOscillator();
+    const og = ctx.createGain();
+    osc.connect(og); og.connect(dest);
+    osc.type = 'sine'; osc.frequency.setValueAtTime(80, t);
+    osc.frequency.exponentialRampToValueAtTime(30, t + 0.3);
+    og.gain.setValueAtTime(0.35, t);
+    og.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    osc.start(t); osc.stop(t + 0.4);
+  }
+
+  // §8.2 chat_offline — modem disconnect: descending digital chirp
+  private _chatOffline(): void {
+    const ctx = this.c!; const dest = this.dest!;
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.connect(g); g.connect(dest);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1200, t);
+    osc.frequency.linearRampToValueAtTime(200, t + 0.4);
+    g.gain.setValueAtTime(0.12, t);
+    g.gain.setValueAtTime(0.12, t + 0.35);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    osc.start(t); osc.stop(t + 0.55);
+    // Second chirp (modem negotiation feel)
+    const osc2 = ctx.createOscillator();
+    const g2 = ctx.createGain();
+    osc2.connect(g2); g2.connect(dest);
+    osc2.type = 'square';
+    osc2.frequency.setValueAtTime(600, t + 0.2);
+    osc2.frequency.linearRampToValueAtTime(1800, t + 0.4);
+    g2.gain.setValueAtTime(0.08, t + 0.2);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    osc2.start(t + 0.2); osc2.stop(t + 0.55);
+  }
+
+  // §8.2 alarm_chaos — overlapping car alarms (rapid alternating tones)
+  private _alarmChaos(): void {
+    const ctx = this.c!; const dest = this.dest!;
+    const t = ctx.currentTime;
+    const patterns = [
+      [880, 660], [1046, 784], [740, 587], [988, 740],
+    ];
+    patterns.forEach(([hi, lo], car) => {
+      const offset = car * 0.08;
+      [hi, lo, hi].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.connect(g); g.connect(dest);
+        osc.type = 'square'; osc.frequency.value = freq;
+        const s = t + offset + i * 0.12;
+        g.gain.setValueAtTime(0.07, s);
+        g.gain.exponentialRampToValueAtTime(0.001, s + 0.1);
+        osc.start(s); osc.stop(s + 0.12);
+      });
+    });
+  }
+
+  // §8.2 babushka_cerberus — shrill attention sound (high-pitched yell feel)
+  private _babushkaCerberus(): void {
+    const ctx = this.c!; const dest = this.dest!;
+    const t = ctx.currentTime;
+    // Rising "А-НУ-КА!" accent — three sharp stabs
+    [440, 550, 660, 550].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(dest);
+      osc.type = 'sawtooth'; osc.frequency.value = freq;
+      const s = t + i * 0.18;
+      g.gain.setValueAtTime(0.22, s);
+      g.gain.exponentialRampToValueAtTime(0.001, s + 0.15);
+      osc.start(s); osc.stop(s + 0.18);
+    });
+  }
 }
 
 export type SoundName =
   | 'task_complete' | 'meeting_horn' | 'vote_cast' | 'ejection'
   | 'body_found' | 'ambush' | 'siphon_complete' | 'canister_drop'
-  | 'win_owners' | 'win_slivshchiki' | 'ui_click' | 'alarm_button';
+  | 'canister_pickup' | 'win_owners' | 'win_slivshchiki' | 'ui_click'
+  | 'alarm_button' | 'pipe_burst_sfx' | 'chat_offline_sfx'
+  | 'alarm_chaos_sfx' | 'babushka_cerberus_sfx';
 
 export const audio = new AudioManager();

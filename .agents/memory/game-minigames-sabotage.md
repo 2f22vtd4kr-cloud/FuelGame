@@ -67,4 +67,13 @@ description: §2.5 task mini-games and §2.9 sabotage system implementation deta
 - Bot tries sabotage with ~0.003 probability per frame (≈ once per ~5min on average)
 - Preference order: alarm_chaos → chat_offline → babushka_cerberus → pipe_burst (least aggressive first)
 
-**Why:** Enforcement at `callMeeting()` entrypoint (not just at the UI layer) ensures sabotages work for bots too. Pipe burst enforcement in `updateSiphoning()` prevents state divergence between human and bot siphoning.
+### SFX (§8.2)
+- Each sabotage key maps to a distinct synthesized sound in `spawnSabotage()`: `pipe_burst_sfx` (water rush+thud), `chat_offline_sfx` (modem chirp), `alarm_chaos_sfx` (overlapping car alarms), `babushka_cerberus_sfx` (sawtooth yell stabs)
+- `canister_pickup` sound added at human canister pickup interaction (metallic clink)
+- All new entries added to the `SoundName` union; switch statement in `audio.play()` exhausts them
+
+### §4.3 Bot suspicion additions
+- **Sprint suspicion**: module-level `_sprintTimer: Map<string, number>` tracks per-bot-per-target sprint duration; only raises suspicion after 3s continuous sprinting within 300px range (one-shot 0.04 bump then reset). This avoids immediate suspicion on normal movement.
+- **Дядя Серёжа bias**: bots slowly reduce suspicion on players with `character === 'uncle_seryozha'` (satire of ageism). Uses `dt`-scaled decay.
+
+**Why:** Enforcement at `callMeeting()` entrypoint (not just at the UI layer) ensures sabotages work for bots too. Pipe burst enforcement in `updateSiphoning()` prevents state divergence between human and bot siphoning. Sprint suspicion requires accumulation map outside `Player` type to avoid changing the shared data structure.

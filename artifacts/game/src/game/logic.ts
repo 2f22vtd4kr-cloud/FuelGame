@@ -596,7 +596,14 @@ function spawnSabotage(key: SabotageKey): void {
     valve2Progress: 0,
   };
   gs.activeSabotages.push(sab);
-  audio.play('alarm_button');
+  // §8.2 distinct sabotage sounds
+  switch (key) {
+    case 'pipe_burst':        audio.play('pipe_burst_sfx'); break;
+    case 'chat_offline':      audio.play('chat_offline_sfx'); break;
+    case 'alarm_chaos':       audio.play('alarm_chaos_sfx'); break;
+    case 'babushka_cerberus': audio.play('babushka_cerberus_sfx'); break;
+    default:                  audio.play('alarm_button'); break;
+  }
 }
 
 function getSabotageActivationPrompt(key: SabotageKey): string {
@@ -875,6 +882,7 @@ function updateInteractions(dt: number, input: InputState): void {
         const idx = gs.canisters.indexOf(nearCanister);
         gs.canisters.splice(idx, 1);
         player.isCarryingCanister = true;
+        audio.play('canister_pickup');
         if (player.role === 'khozain') {
           setPrompt('🎯 Канистра в руках — улика на сходке!', 3);
           if (gs.meeting) {

@@ -13,6 +13,9 @@ import { callMeeting, triggerBotSabotage, isSabotageActive } from './logic';
 import { VALVE_FIX_TIME, VALVE_INTERACT_RADIUS } from './types';
 import { audio } from './audio';
 
+// §4.3 Sprint duration tracking: key = `${botId}:${targetId}`, value = seconds seen sprinting
+const _sprintTimer = new Map<string, number>();
+
 // ─── §4.3 Suspicion helpers ────────────────────────────────────────────────────
 
 /** Decay all suspicion scores for a bot by a small amount each tick. */
@@ -134,6 +137,32 @@ function updateKhozainBot(bot: Player, dt: number): void {
     const nearDrained = gs.cars.some(c => c.fuel < 20 && dist(p.pos, c.pos) < 100);
     if (nearDrained && dist(bot.pos, p.pos) < 200) {
       raiseSuspicion(bot, p.id, 0.08 * dt);
+    }
+  }
+  // §4.3 Sprint suspicion — raise suspicion only after target has been sprinting
+  // continuously for >3 seconds within 300px (sustained fleeing looks guilty)
+  for (const p of gs.players) {
+    if (p.id === bot.id || !p.isAlive) continue;
+    const key = `${bot.id}:${p.id}`;
+    const inRange = dist(bot.pos, p.pos) < 300;
+    if (inRange && p.isSprinting) {
+      const prev = _sprintTimer.get(key) ?? 0;
+      const next = prev + dt;
+      _sprintTimer.set(key, next);
+      if (next >= 3) {
+        // Threshold crossed: apply a modest bump, reset so it doesn't stack
+        raiseSuspicion(bot, p.id, 0.04);
+        _sprintTimer.set(key, 0);
+      }
+    } else {
+      // Out of range or stopped sprinting — reset accumulator
+      if (_sprintTimer.has(key)) _sprintTimer.delete(key);
+    }
+  }
+  // §4.3 Дядя Серёжа bias — older man looks harmless (ageism satire)
+  for (const p of gs.players) {
+    if (p.character === 'uncle_seryozha' && p.isAlive && p.id !== bot.id) {
+      bot.suspicion[p.id] = Math.max(0, (bot.suspicion[p.id] ?? 0) - 0.05 * dt);
     }
   }
 
