@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import type { CharacterKey, BotDifficulty } from '../game/types';
 import { CHARACTERS, CHARACTER_KEYS } from '../data/characters';
 import { gs, startGame } from '../game/state';
+import { loadProfile, moscowDateString, xpToTier } from '../game/profile';
+import { getDailyChallenge } from '../data/dailyChallenges';
+import { ACHIEVEMENTS } from '../data/achievements';
 
-// §1.4 "Сегодня в ЖК" rotating flavor texts (atmospheric, updates every 6s)
+// §1.4 "Сегодня в ЖК" rotating flavor texts
 const LOBBY_FLAVOR_TEXTS = [
   'В подъезде №3 снова сломался лифт. Администрация: «Заявка в работе.»',
   'На стоянке нашли 2 пустые канистры. Очень подозрительно.',
@@ -35,7 +38,20 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
   const [siphonersCount, setSiphonersCount] = useState(2);
   const [difficulty, setDifficulty] = useState<BotDifficulty>('medium');
   const [flavorIdx, setFlavorIdx] = useState(() => Math.floor(Math.random() * LOBBY_FLAVOR_TEXTS.length));
+  const [showAchievements, setShowAchievements] = useState(false);
   const charDef = CHARACTERS[selected];
+
+  const profile = loadProfile();
+  const today = moscowDateString();
+  const dailyDef = getDailyChallenge(today);
+  const dailyState = profile.daily?.date === today ? profile.daily : null;
+  const dailyProgress = dailyState?.progress ?? 0;
+  const dailyCompleted = dailyState?.completed ?? false;
+
+  const XP_PER_TIER = 500;
+  const tier = xpToTier(profile.battlePassXP);
+  const xpInTier = profile.battlePassXP % XP_PER_TIER;
+  const tierPct = Math.round((xpInTier / XP_PER_TIER) * 100);
 
   // §1.4 Rotate "Сегодня в ЖК" flavor text every 6 seconds
   useEffect(() => {
@@ -52,6 +68,8 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
     onStart();
   }
 
+  const unlockedAchs = ACHIEVEMENTS.filter(a => profile.achievements.includes(a.id));
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 60,
@@ -61,7 +79,7 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
       fontFamily: 'sans-serif',
     }}>
       {/* Logo / Title */}
-      <div style={{ textAlign: 'center', marginBottom: 20 }}>
+      <div style={{ textAlign: 'center', marginBottom: 12 }}>
         <div style={{ fontSize: 48, marginBottom: 4 }}>🏘️</div>
         <div style={{
           fontSize: 32, fontWeight: 900, color: '#FF5722',
@@ -76,6 +94,119 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
           Кто из соседей сливает бензин?
         </div>
       </div>
+
+      {/* ── §3.2/§3.3 Profile header ── */}
+      <div style={{
+        width: '100%', maxWidth: 380,
+        background: 'rgba(255,215,0,0.07)',
+        border: '1px solid rgba(255,215,0,0.2)',
+        borderRadius: 12, padding: '10px 14px', marginBottom: 14,
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 'bold', color: '#FFD700' }}>
+              💰 {profile.babki} бабок
+            </span>
+            <span style={{ fontSize: 11, color: '#9E9E9E' }}>
+              • Матчей: {profile.totalMatchesPlayed}
+            </span>
+          </div>
+          {/* Battle Pass progress bar */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+              <span style={{ fontSize: 9, color: '#9E9E9E' }}>Боевой Пропуск — Ур. {tier}</span>
+              <span style={{ fontSize: 9, color: '#64B5F6' }}>{tierPct}%</span>
+            </div>
+            <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 3,
+                background: 'linear-gradient(90deg, #1565C0, #64B5F6)',
+                width: `${tierPct}%`,
+              }} />
+            </div>
+          </div>
+        </div>
+        {/* Achievements badge */}
+        <button
+          onClick={() => setShowAchievements(v => !v)}
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: 8, padding: '6px 10px',
+            cursor: 'pointer', textAlign: 'center', flexShrink: 0,
+          }}
+        >
+          <div style={{ fontSize: 18 }}>🏅</div>
+          <div style={{ fontSize: 9, color: '#9E9E9E', marginTop: 2 }}>{unlockedAchs.length}/50</div>
+        </button>
+      </div>
+
+      {/* §3.5 Daily challenge */}
+      <div style={{
+        width: '100%', maxWidth: 380,
+        background: dailyCompleted ? 'rgba(76,175,80,0.12)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${dailyCompleted ? 'rgba(76,175,80,0.4)' : 'rgba(255,255,255,0.1)'}`,
+        borderRadius: 10, padding: '8px 14px', marginBottom: 14,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+      }}>
+        <div>
+          <div style={{ fontSize: 9, color: dailyCompleted ? '#4CAF50' : '#9E9E9E', marginBottom: 2, letterSpacing: 1, fontWeight: 'bold' }}>
+            ☀️ ЕЖЕДНЕВНОЕ ЗАДАНИЕ
+          </div>
+          <div style={{ fontSize: 11, color: '#FFF' }}>
+            {dailyDef.emoji} {dailyDef.label}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          {dailyCompleted ? (
+            <span style={{ fontSize: 13, color: '#4CAF50', fontWeight: 'bold' }}>✅ Готово</span>
+          ) : (
+            <>
+              <div style={{ fontSize: 12, color: '#FFD700', fontWeight: 'bold' }}>
+                {dailyProgress}/{dailyDef.target}
+              </div>
+              <div style={{ fontSize: 9, color: '#9E9E9E' }}>+200 бабок</div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* §3.6 Achievements panel (expandable) */}
+      {showAchievements && (
+        <div style={{
+          width: '100%', maxWidth: 380,
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 12, padding: '12px 14px', marginBottom: 14,
+          maxHeight: 260, overflowY: 'auto',
+        }}>
+          <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 10, letterSpacing: 1 }}>
+            ДОСТИЖЕНИЯ ({unlockedAchs.length}/50)
+          </div>
+          {ACHIEVEMENTS.map(ach => {
+            const unlocked = profile.achievements.includes(ach.id);
+            return (
+              <div key={ach.id} style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                opacity: unlocked ? 1 : 0.35,
+              }}>
+                <div style={{ fontSize: 20, flexShrink: 0, filter: unlocked ? 'none' : 'grayscale(1)' }}>{ach.emoji}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: unlocked ? '#FFD700' : '#9E9E9E', fontWeight: unlocked ? 'bold' : 'normal' }}>
+                    {ach.title}
+                  </div>
+                  <div style={{ fontSize: 9, color: '#616161' }}>{ach.description}</div>
+                </div>
+                <div style={{ fontSize: 10, color: '#FFD700', flexShrink: 0 }}>
+                  {unlocked ? `✅ +${ach.babkiReward}` : `${ach.babkiReward}💰`}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Character select */}
       <div style={{ width: '100%', maxWidth: 380, marginBottom: 16 }}>
@@ -249,7 +380,7 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
         🌐 Мультиплеер (с друзьями)
       </button>
 
-      {/* §1.4 "Сегодня в ЖК" rotating flavor text ticker */}
+      {/* §1.4 "Сегодня в ЖК" */}
       <div style={{
         width: '100%', maxWidth: 380,
         marginTop: 16, marginBottom: 8,
@@ -260,10 +391,7 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
         <div style={{ fontSize: 9, color: '#FF5722', letterSpacing: 1, marginBottom: 4, fontWeight: 'bold' }}>
           📰 СЕГОДНЯ В ЖК
         </div>
-        <div style={{
-          fontSize: 11, color: '#BDBDBD', lineHeight: 1.5,
-          transition: 'opacity 0.5s',
-        }}>
+        <div style={{ fontSize: 11, color: '#BDBDBD', lineHeight: 1.5 }}>
           {LOBBY_FLAVOR_TEXTS[flavorIdx]}
         </div>
       </div>

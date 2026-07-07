@@ -236,9 +236,10 @@ export interface Player {
   neutralRole: NeutralRole | null;
   canistersCollected: number;     // for janitor neutral
   barsikMeowCooldown: number;    // for barsik neutral
-  // Per-player stats (for results screen §9.1)
+  // Per-player stats (for results screen §9.1 + rewards §3.2)
   fuelSiphoned: number;           // total fuel % siphoned this match
   tasksCompleted: number;         // total tasks completed this match
+  correctVotes: number;           // §3.2 votes that correctly identified a slivshchik
   // §4.3 Bot suspicion vector (khozain bots only)
   suspicion: Record<string, number>;
   // Bot AI
@@ -396,6 +397,8 @@ export interface GameState {
   botDifficulty: BotDifficulty;
   // §10.2 Immunity tickets on the ground
   immunityTickets: ImmunityTicket[];
+  // §3.5 Track human player's immunity ticket use this match (for daily challenge)
+  immunityTicketsUsedThisMatch: number;
   // §13.1 Accessibility settings
   colorblindMode: boolean;
   highContrastMode: boolean;

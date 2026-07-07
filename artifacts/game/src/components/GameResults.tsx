@@ -1,6 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import type { GameState, Player } from '../game/types';
 import { CHARACTERS } from '../data/characters';
+import { applyMatchRewards, type MatchRewards } from '../game/rewards';
+import { loadProfile } from '../game/profile';
 
 interface Props {
   gs: GameState;
@@ -61,7 +63,25 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
   const totalTasksDone = gs.tasks.filter(t => t.isComplete).length;
   const aliveTime = Math.floor(gs.time);
 
-  // §9.1 Share card generation
+  // ── §3.2/§3.3/§3.6 Apply rewards once on mount ────────────────────────────
+  const [rewards, setRewards] = useState<MatchRewards | null>(null);
+  const rewardsApplied = useRef(false);
+  useEffect(() => {
+    if (!rewardsApplied.current) {
+      rewardsApplied.current = true;
+      const r = applyMatchRewards(gs);
+      setRewards(r);
+    }
+  }, []); // eslint-disable-line
+
+  const profile = loadProfile();
+
+  // ── §3.3 Battle pass progress bar ─────────────────────────────────────────
+  const XP_PER_TIER = 500;
+  const xpInTier = profile.battlePassXP % XP_PER_TIER;
+  const tierPct = Math.round((xpInTier / XP_PER_TIER) * 100);
+
+  // ── §9.1 Share card generation ─────────────────────────────────────────────
   function generateShareCard() {
     const canvas = document.createElement('canvas');
     canvas.width = 1080; canvas.height = 1080;
@@ -74,23 +94,19 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 1080, 1080);
 
-    // Title
     ctx.fillStyle = '#FFD700';
     ctx.font = 'bold 72px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('95-Й БАКСТАБ', 540, 120);
 
-    // Result
     ctx.fillStyle = '#FFF';
     ctx.font = 'bold 96px sans-serif';
     ctx.fillText(iWon ? '🏆 ПОБЕДА!' : '💀 ПОРАЖЕНИЕ', 540, 240);
 
-    // Win reason
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.font = '36px sans-serif';
     ctx.fillText(gs.winReason, 540, 320);
 
-    // Stats
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
     ctx.beginPath();
     ctx.roundRect(80, 370, 920, 200, 20);
@@ -113,14 +129,12 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
       ctx.fillText(label, x, 510);
     });
 
-    // My stats (if local player)
     if (localPlayer) {
       ctx.fillStyle = 'rgba(255,255,255,0.1)';
       ctx.beginPath();
       ctx.roundRect(80, 570, 920, 200, 20);
       ctx.fill();
 
-      // §9.1 Match title (prominent)
       ctx.fillStyle = iWon ? '#FFD700' : '#FF8A80';
       ctx.font = 'bold 44px sans-serif';
       ctx.textAlign = 'center';
@@ -133,9 +147,15 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
       ctx.fillStyle = '#ccc';
       ctx.font = '26px sans-serif';
       ctx.fillText(`Топлива слито: ${Math.round(localPlayer.fuelSiphoned)}% | Задач: ${localPlayer.tasksCompleted}`, 120, 740);
+
+      if (rewards) {
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`+${rewards.babkiEarned} бабок  |  +${rewards.xpEarned} XP`, 540, 790);
+      }
     }
 
-    // CTA
     ctx.fillStyle = '#FFD700';
     ctx.font = 'bold 44px sans-serif';
     ctx.textAlign = 'center';
@@ -144,7 +164,6 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
     ctx.font = '30px sans-serif';
     ctx.fillText('Играй в 95-Й Бакстаб | АИ-95 уже 87₽', 540, 945);
 
-    // Download
     const link = document.createElement('a');
     link.download = '95-backstab-result.png';
     link.href = canvas.toDataURL('image/png');
@@ -188,6 +207,101 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
       <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: 20, fontStyle: 'italic' }}>
         {gs.winReason}
       </div>
+
+      {/* ── §3.2/§3.3 Rewards panel ── */}
+      {rewards && (
+        <div style={{
+          width: '100%', maxWidth: 340,
+          background: 'rgba(255,215,0,0.1)',
+          border: '1.5px solid rgba(255,215,0,0.35)',
+          borderRadius: 14, padding: '14px 16px', marginBottom: 16,
+        }}>
+          <div style={{ fontSize: 11, color: '#FFD700', marginBottom: 10, letterSpacing: 1, textAlign: 'center' }}>
+            💰 НАГРАДЫ ЗА МАТЧ
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <RewardStat label="Бабки" value={`+${rewards.babkiEarned}`} color="#FFD700" />
+            <RewardStat label="Опыт BP" value={`+${rewards.xpEarned} XP`} color="#64B5F6" />
+          </div>
+
+          {/* Battle Pass progress */}
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ fontSize: 10, color: '#9E9E9E' }}>Боевой Пропуск — Ур. {profile.battlePassTier}</span>
+              <span style={{ fontSize: 10, color: '#64B5F6' }}>{tierPct}%</span>
+            </div>
+            <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 3,
+                background: 'linear-gradient(90deg, #1565C0, #64B5F6)',
+                width: `${tierPct}%`,
+                transition: 'width 1s ease',
+              }} />
+            </div>
+            {rewards.tiersAfter > rewards.tiersBefore && (
+              <div style={{ fontSize: 11, color: '#FFD700', textAlign: 'center', marginTop: 6, fontWeight: 'bold' }}>
+                🎉 Уровень {rewards.tiersAfter}!
+              </div>
+            )}
+          </div>
+
+          {/* Babki balance */}
+          <div style={{ marginTop: 10, textAlign: 'center', fontSize: 12, color: '#9E9E9E' }}>
+            Баланс: <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{profile.babki} 💰</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── §3.5 Daily challenge progress ── */}
+      {rewards?.dailyDef && (
+        <div style={{
+          width: '100%', maxWidth: 340,
+          background: rewards.dailyCompleted ? 'rgba(76,175,80,0.15)' : 'rgba(255,255,255,0.05)',
+          border: `1.5px solid ${rewards.dailyCompleted ? 'rgba(76,175,80,0.5)' : 'rgba(255,255,255,0.12)'}`,
+          borderRadius: 14, padding: '12px 16px', marginBottom: 16,
+        }}>
+          <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 6, letterSpacing: 1 }}>
+            ☀️ ЕЖЕДНЕВНОЕ ЗАДАНИЕ
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div style={{ fontSize: 13, color: '#FFF' }}>
+              {rewards.dailyDef.emoji} {rewards.dailyDef.label}
+            </div>
+            <div style={{ fontSize: 12, color: rewards.dailyCompleted ? '#4CAF50' : '#FFD700', fontWeight: 'bold', flexShrink: 0 }}>
+              {rewards.dailyCompleted ? '✅ +200' : `${rewards.dailyProgress}/${rewards.dailyTarget}`}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── §3.6 Newly unlocked achievements ── */}
+      {rewards && rewards.newAchievements.length > 0 && (
+        <div style={{
+          width: '100%', maxWidth: 340,
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: 14, padding: '12px 16px', marginBottom: 16,
+        }}>
+          <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 8, letterSpacing: 1 }}>
+            🏅 НОВЫЕ ДОСТИЖЕНИЯ
+          </div>
+          {rewards.newAchievements.map(ach => (
+            <div key={ach.id} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '6px 0',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+            }}>
+              <div style={{ fontSize: 24, flexShrink: 0 }}>{ach.emoji}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 'bold', color: '#FFD700' }}>{ach.title}</div>
+                <div style={{ fontSize: 10, color: '#9E9E9E' }}>{ach.description}</div>
+              </div>
+              <div style={{ fontSize: 11, color: '#FFD700', fontWeight: 'bold', flexShrink: 0 }}>
+                +{ach.babkiReward}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Match stats */}
       <div style={{
@@ -236,7 +350,8 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
                   fontSize: 11, fontWeight: isMe ? 'bold' : 'normal',
                   color: isMe ? '#FFD700' : '#ddd',
                 }}>
-                  {p.name} {isSlivy ? '🪣' : '🏠'}{p.neutralRole === 'barsik' ? '😺' : p.neutralRole === 'policeman' ? '🕵️' : p.neutralRole === 'janitor' ? '🧹' : ''}
+                  {p.name} {isSlivy ? '🪣' : '🏠'}
+                  {p.neutralRole === 'barsik' ? '😺' : p.neutralRole === 'policeman' ? '🕵️' : p.neutralRole === 'janitor' ? '🧹' : ''}
                   {!p.isAlive && ' 💀'}
                 </div>
               </div>
@@ -245,6 +360,9 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
                   ? <span style={{ color: '#EF9A9A' }}>⛽{Math.round(p.fuelSiphoned)}%</span>
                   : <span style={{ color: '#A5D6A7' }}>✅{p.tasksCompleted}</span>
                 }
+                {isMe && p.correctVotes > 0 && (
+                  <><br/><span style={{ color: '#64B5F6' }}>🗳️{p.correctVotes}</span></>
+                )}
               </div>
             </div>
           );
@@ -280,7 +398,7 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
         </div>
       </div>
 
-      {/* CTA (fuel bot integration per design doc) */}
+      {/* CTA */}
       <div style={{
         width: '100%', maxWidth: 340,
         background: iWon
@@ -332,8 +450,6 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
       >
         🎮 СЫГРАТЬ ЕЩЁ
       </button>
-
-      {/* Hidden share canvas — generated dynamically in generateShareCard() */}
     </div>
   );
 }
@@ -342,6 +458,15 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ textAlign: 'center' }}>
       <div style={{ fontSize: 18, fontWeight: 'bold', color: '#FFF' }}>{value}</div>
+      <div style={{ fontSize: 9, color: '#9E9E9E', marginTop: 2 }}>{label}</div>
+    </div>
+  );
+}
+
+function RewardStat({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: 20, fontWeight: 'bold', color }}>{value}</div>
       <div style={{ fontSize: 9, color: '#9E9E9E', marginTop: 2 }}>{label}</div>
     </div>
   );

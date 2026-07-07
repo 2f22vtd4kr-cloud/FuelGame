@@ -1293,6 +1293,7 @@ function updateInteractions(dt: number, input: InputState): void {
         nearCar.hasImmunity = true;
         nearCar.immunityTimer = IMMUNITY_TICKET_DURATION;
         player.hasImmunityTicket = false;
+        if (player.isHuman) gs.immunityTicketsUsedThisMatch += 1;
         audio.play('fuel_lock');
         setPrompt('🛡️ Цена зафиксирована! Сливщики в панике. В жизни тоже можно: @fuel_fuel_fuel_bot', 5);
         clearTaskDoer(player.id);
@@ -1888,6 +1889,15 @@ function resolveMeeting(): void {
       const isSlivshchik = ejected.role === 'slivshchik';
       m.ejectionText = getEjectionText(ejected.character, isSlivshchik);
       audio.play('ejection');
+      // §3.2 Credit players who voted correctly (voted for an actual slivshchik)
+      if (isSlivshchik) {
+        for (const vote of m.votes) {
+          if (vote.targetId === ejectedId) {
+            const voter = gs.players.find(p => p.id === vote.voterId);
+            if (voter) voter.correctVotes = (voter.correctVotes ?? 0) + 1;
+          }
+        }
+      }
       // §9.2 Backstab Moment: local player being ejected is dramatic
       if (ejectedId === gs.localPlayerId && !gs.backstabMoment) {
         gs.backstabMoment = 'dramatic_eject';

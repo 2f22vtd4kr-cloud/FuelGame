@@ -12,3 +12,4 @@
 - [95-Y Vol1 tier1 completion](game-vol1-tier1-complete.md) — all HANDOFF Tier 1 items confirmed done; session 6 added babushka role hints + multiplayer auto-start
 - [95-Y Vol1 final gaps](game-vol1-final-gaps.md) — session 7: Дядя Серёжа CTA, role-aware bot meeting chat, bot follow-suspicious state, Nightmare stalking; all Vol1 frontend items done
 - [95-Y Quick Play matchmaking](game-quickplay.md) — §5.5 server-side queue in wsHandler.ts; QUICK_MATCH_SIZE=4; GameRoom.isQuickPlay triggers server countdown; room_joined carries isQuickPlay flag; MultiplayerLobby has queueing screen
+- [95-Y Economy & Progression](game-economy-progression.md) — §3.2/§3.3/§3.5/§3.6 Бабки+XP+daily+achievements; localStorage profile; update stats BEFORE checkAchievements to avoid double-count; correctVotes tracked in resolveMeeting()
