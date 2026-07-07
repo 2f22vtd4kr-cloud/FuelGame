@@ -1,5 +1,5 @@
 import type { GameState, Vec2 } from './types';
-import { ALARM_RADIUS, MAP_W, MAP_H } from './types';
+import { ALARM_RADIUS, MAP_W, MAP_H, CROUCH_VISIBILITY_MULT } from './types';
 import { TASK_DEFS } from '../data/tasks';
 import { DECORATIONS, ENTRANCE_POS, DUMPSTER_POSITIONS, VISION_BUILDINGS, VALVE_POSITIONS, BABUSHKA_CERBERUS_POS } from '../data/map';
 import { CHARACTERS } from '../data/characters';
@@ -49,6 +49,7 @@ export function renderGame(
   // ── §2.3 Vision polygon (computed once per frame) ────────────────────────────
   // Dead local player gets ghost vision (no fog) so they can watch the game.
   let visionPoly: Vec2[] | null = null;
+  let crouchCheckPoly: Vec2[] | null = null; // §2.2 — narrowed cone for crouching targets
   if (localPlayer.isAlive) {
     const fovDeg = localPlayer.role === 'slivshchik'
       ? VISION_FOV_SLIVSHCHIK
@@ -61,6 +62,20 @@ export function renderGame(
       VISION_RADIUS,
       obstacles,
     );
+    // §2.2 Crouch stealth: if any non-local player is crouching, also compute a
+    // narrower cone (30% smaller FOV) to check their reduced visibility.
+    const hasCrouchingEnemy = state.players.some(
+      p => p.isAlive && p.id !== state.localPlayerId && p.isCrouching,
+    );
+    if (hasCrouchingEnemy) {
+      crouchCheckPoly = computeVisionPolygon(
+        localPlayer.pos,
+        localPlayer.facingAngle,
+        fovDeg * CROUCH_VISIBILITY_MULT,
+        VISION_RADIUS,
+        obstacles,
+      );
+    }
   }
 
   // ── World layers (drawn before fog overlay) ──────────────────────────────────
@@ -73,7 +88,7 @@ export function renderGame(
   drawBodies(ctx, state);
   drawCanisters(ctx, state);
   drawValveMarkers(ctx, state);    // §2.9 valve fix markers
-  drawPlayers(ctx, state, visionPoly);
+  drawPlayers(ctx, state, visionPoly, crouchCheckPoly);
   drawBabushkaNPC(ctx, state);     // §2.9 babushka cerberus NPC
   drawAlarmButton(ctx, state);
   drawEntrance(ctx);
@@ -683,6 +698,7 @@ function drawPlayers(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   visionPoly: Vec2[] | null,
+  crouchCheckPoly: Vec2[] | null = null,
 ): void {
   const localPlayer = state.players.find(p => p.id === state.localPlayerId);
   const isLocalSlivshchik = localPlayer?.role === 'slivshchik';
@@ -694,10 +710,16 @@ function drawPlayers(
     const isLocal = player.id === state.localPlayerId;
 
     // §2.3 — check visibility for HUD annotation gating (not for rendering,
-    // which is handled by the fog overlay drawn afterwards)
-    const playerVisible = isLocal || visionPoly === null
-      ? true
-      : pointInPolygon(x, y, visionPoly);
+    // which is handled by the fog overlay drawn afterwards).
+    // §2.2 — crouching players require the narrower 70%-FOV cone to be "seen"
+    // (outer 30% of the player's cone doesn't reveal crouching targets).
+    const inFullCone = visionPoly === null || pointInPolygon(x, y, visionPoly);
+    const inCrouchCone = !player.isCrouching || crouchCheckPoly === null || pointInPolygon(x, y, crouchCheckPoly);
+    const playerVisible = isLocal || (inFullCone && inCrouchCone);
+
+    // §2.2 Crouch stealth — fade players visible only in outer cone ring
+    const crouchFadeAlpha = (!isLocal && player.isCrouching && inFullCone && !inCrouchCone) ? 0.35 : 1;
+    ctx.globalAlpha = crouchFadeAlpha;
 
     // Suspected outline
     if (player.suspectedTimer > 0) {
@@ -808,10 +830,11 @@ function drawPlayers(
         ctx.textBaseline = 'middle';
         ctx.globalAlpha = 0.5 + 0.5 * Math.sin(Date.now() / 180);
         ctx.fillText('⚠️', x, y - 32);
-        ctx.globalAlpha = 1;
         ctx.textBaseline = 'alphabetic';
       }
     }
+    // Always reset alpha at end of player draw pass
+    ctx.globalAlpha = 1;
   }
 }
 

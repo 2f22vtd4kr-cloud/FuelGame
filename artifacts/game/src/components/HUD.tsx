@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { GameState, SabotageKey } from '../game/types';
-import { SPRINT_MAX, SABOTAGE_LABELS, SABOTAGE_COOLDOWNS, SABOTAGE_DURATIONS } from '../game/types';
+import { SPRINT_MAX, SABOTAGE_LABELS, SABOTAGE_COOLDOWNS, SABOTAGE_DURATIONS, SIPHON_AUDIO_RADIUS } from '../game/types';
 import { NEWS_HEADLINES } from '../data/ticker';
 import { CHARACTERS } from '../data/characters';
 import { triggerSabotage } from '../game/logic';
@@ -23,6 +23,12 @@ export default function HUD({ state }: HUDProps) {
   const aliveKhozaeva = state.players.filter(p => p.isAlive && p.role === 'khozain').length;
   const staminaPct = (localPlayer.stamina / SPRINT_MAX) * 100;
   const sabotageCooldown = localPlayer.sabotageCooldown;
+
+  // §13.1 Siphon audio indicator — any active siphon (phase 2) within 8m
+  const nearAudioSiphon = state.cars.some(c =>
+    c.siphonPhase === 2 &&
+    Math.hypot(c.pos.x - localPlayer.pos.x, c.pos.y - localPlayer.pos.y) <= SIPHON_AUDIO_RADIUS,
+  );
 
   return (
     <div style={{
@@ -386,6 +392,36 @@ export default function HUD({ state }: HUDProps) {
           🔔 сходка через {Math.ceil(state.meetingCooldown)}с
         </div>
       )}
+
+      {/* ── §13.1 Siphon audio indicator ── */}
+      {nearAudioSiphon && (
+        <div style={{
+          position: 'absolute',
+          top: '50%', left: 16,
+          transform: 'translateY(-50%)',
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: 'rgba(255,23,68,0.18)',
+          border: '1px solid rgba(255,23,68,0.55)',
+          borderRadius: 8, padding: '6px 10px',
+          pointerEvents: 'none',
+          animation: 'siphonPulse 0.8s ease-in-out infinite alternate',
+        }}>
+          <span style={{ fontSize: 18 }}>⚠️</span>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 'bold', color: '#FF5252', letterSpacing: 1 }}>
+              СЛЫШЕН СЛИВ
+            </div>
+            <div style={{ fontSize: 9, color: '#ffcdd2' }}>где-то рядом...</div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes siphonPulse {
+          from { opacity: 0.6; }
+          to { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // ─── Core Types ───────────────────────────────────────────────────────────────
 
-export type Phase = 'lobby' | 'play' | 'meeting' | 'results';
+export type Phase = 'lobby' | 'briefing' | 'play' | 'meeting' | 'results';
 export type Role = 'khozain' | 'slivshchik';
 export type BotBehavior = 'idle' | 'moving' | 'interacting' | 'fleeing' | 'at_meeting' | 'fake_task';
 
@@ -181,6 +181,7 @@ export interface Player {
   sabotageCooldown: number;   // global cooldown between sabotage uses
   // Items
   isCarryingCanister: boolean;
+  ventCooldown: number;       // §3.1.2 cooldown after using dumpster vent
   // Visual
   emote: string | null;
   emoteTimer: number;
@@ -267,6 +268,10 @@ export const SPRINT_MAX         = 5;         // seconds of sprint
 export const SPRINT_DRAIN_RATE  = 1;         // stamina per second sprinting
 export const SPRINT_REGEN_RATE  = 0.625;     // stamina per second resting (8s to full)
 export const CANISTER_SLOW_MULT = 0.8;       // speed × 0.8 when carrying canister
+export const FLOWERBED_SLOW_MULT = 0.6;      // §1.2 flower beds reduce speed by 40%
+export const SIPHON_AUDIO_RADIUS = 280;      // §13.1 siphon gurgle audible within 8m (~280px)
+export const VENT_COOLDOWN       = 15;       // §3.1.2 dumpster vent cooldown (seconds)
+export const CROUCH_VISIBILITY_MULT = 0.7;  // §2.2 crouching: others see you with 30% narrower FOV
 
 // ─── Top-level Game State ─────────────────────────────────────────────────────
 
@@ -294,6 +299,8 @@ export interface GameState {
   activeMiniGame: MiniGameState | null;
   // §2.9 Sabotage
   activeSabotages: SabotageInstance[];
+  // §2.1 Briefing phase
+  briefingTimer: number;
 }
 
 // ─── Input ────────────────────────────────────────────────────────────────────

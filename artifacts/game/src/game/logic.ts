@@ -10,11 +10,12 @@ import {
   TASK_MINIGAME_MAP,
   SABOTAGE_COOLDOWNS, SABOTAGE_DURATIONS,
   VALVE_FIX_TIME, VALVE_INTERACT_RADIUS,
+  FLOWERBED_SLOW_MULT, VENT_COOLDOWN,
 } from './types';
 import { TASK_DEFS } from '../data/tasks';
 import {
   ENTRANCE_POS, DUMPSTER_POSITIONS, MEETING_SPAWNS, dist, clampToMap, isInsideBuilding,
-  VALVE_POSITIONS, BABUSHKA_CERBERUS_POS,
+  VALVE_POSITIONS, BABUSHKA_CERBERUS_POS, isInFlowerBed,
 } from '../data/map';
 import { CHARACTERS } from '../data/characters';
 import { NEWS_HEADLINES, TICKER_INTERVAL } from '../data/ticker';
@@ -69,6 +70,11 @@ const LETTER_TEXTS = [
 // ─── Main tick ────────────────────────────────────────────────────────────────
 
 export function tickGame(dt: number, input: InputState): void {
+  if (gs.phase === 'briefing') {
+    gs.briefingTimer = Math.max(0, gs.briefingTimer - dt);
+    if (gs.briefingTimer <= 0) gs.phase = 'play';
+    return;
+  }
   if (gs.phase === 'play') {
     gs.time += dt;
     gs.meetingCooldown = Math.max(0, gs.meetingCooldown - dt);
@@ -126,6 +132,11 @@ function updateHumanPlayer(dt: number, input: InputState): void {
   if (player.isSprinting) speedMult = SPRINT_SPEED_MULT;
   else if (player.isCrouching) speedMult = CROUCH_SPEED_MULT;
   if (player.isCarryingCanister) speedMult *= CANISTER_SLOW_MULT;
+  // §1.2 Flower-bed slow zone (0.6× speed, can't sprint out faster)
+  if (isInFlowerBed(player.pos)) speedMult *= FLOWERBED_SLOW_MULT;
+
+  // §3.1.2 Vent cooldown decay
+  if (player.ventCooldown > 0) player.ventCooldown -= dt;
 
   if (isMoving) {
     const nx = input.dx / len;
@@ -619,7 +630,35 @@ function updateInteractions(dt: number, input: InputState): void {
     }
   }
 
-  // ── 4b. Canister pickup from ground ──────────────────────────────────────
+  // ── 4b. Dumpster vent (§3.1.2 — Сливщик fast-travel between dumpsters) ───
+  // On cooldown: show an informational note but fall through so other nearby
+  // interactions (tasks, canisters, etc.) are still reachable.
+  // Only block + consume the E press when the vent is actually ready to use.
+  if (player.role === 'slivshchik' && !player.isCarryingCanister) {
+    const nearDumpIdx = DUMPSTER_POSITIONS.findIndex(d => dist(player.pos, d) < 80);
+    if (nearDumpIdx >= 0) {
+      if (player.ventCooldown > 0) {
+        // Non-blocking note; fall through to let other interactions work
+        setPrompt(`🕳️ Вентиляция: ${Math.ceil(player.ventCooldown)}с`, 0.2);
+        // intentionally no `return` — lower-priority blocks still run
+      } else {
+        setPrompt('🕳️ [E] Вентиляция → другая мусорка', 0.2);
+        if (input.interact && !input.prevInteract) {
+          const otherIdx = (nearDumpIdx + 1) % DUMPSTER_POSITIONS.length;
+          player.pos = { ...DUMPSTER_POSITIONS[otherIdx] };
+          player.ventCooldown = VENT_COOLDOWN;
+          audio.play('ui_click');
+          setPrompt('💨 Нырнул в мусорку! Вынырнул с другой стороны.', 2);
+          clearTaskDoer(player.id);
+          return;
+        }
+        clearTaskDoer(player.id);
+        return;
+      }
+    }
+  }
+
+  // ── 4c. Canister pickup from ground ──────────────────────────────────────
   if (!player.isCarryingCanister) {
     const nearCanister = gs.canisters.find(c => dist(player.pos, c.pos) < CANISTER_RADIUS);
     if (nearCanister) {

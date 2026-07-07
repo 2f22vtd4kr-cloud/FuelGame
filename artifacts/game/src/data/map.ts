@@ -165,6 +165,22 @@ export function isNearDumpster(pos: Vec2, radius = 50): boolean {
   return DUMPSTER_POSITIONS.some(d => dist(pos, d) < radius);
 }
 
+// ─── Flower-bed slow zones (§1.2 — 0.6× speed modifier) ─────────────────────
+// Each flowerbed decoration is a 56×36 ellipse; use a 60×40 bounding rect.
+
+export const FLOWERBED_RECTS: Rect[] = [
+  { x: 322, y: 542, w: 60, h: 40 },  // left flowerbed
+  { x: 572, y: 542, w: 60, h: 40 },  // centre flowerbed
+  { x: 822, y: 542, w: 60, h: 40 },  // right flowerbed
+];
+
+export function isInFlowerBed(pos: Vec2): boolean {
+  for (const r of FLOWERBED_RECTS) {
+    if (pos.x >= r.x && pos.x <= r.x + r.w && pos.y >= r.y && pos.y <= r.y + r.h) return true;
+  }
+  return false;
+}
+
 export function clampToMap(pos: Vec2, radius = 12): Vec2 {
   return {
     x: Math.max(radius, Math.min(MAP_W - radius, pos.x)),

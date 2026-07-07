@@ -32,6 +32,7 @@ export function createInitialState(): GameState {
     promptTimer: 0,
     activeMiniGame: null,
     activeSabotages: [],
+    briefingTimer: 0,
   };
 }
 
@@ -87,6 +88,7 @@ export function startGame(
       siphonCooldown: 0,
       sabotageCooldown: 0,
       isCarryingCanister: false,
+      ventCooldown: 0,
       emote: null,
       emoteTimer: 0,
       suspectedTimer: 0,
@@ -122,7 +124,8 @@ export function startGame(
     respawnTimer: 0,
   }));
 
-  gs.phase = 'play';
+  gs.phase = 'briefing';
+  gs.briefingTimer = 5;
   gs.players = players;
   gs.cars = cars;
   gs.tasks = tasks;

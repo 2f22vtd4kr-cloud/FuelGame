@@ -3,9 +3,10 @@ import type { Player, Vec2 } from './types';
 import {
   SIPHON_RADIUS, BOT_FLEE_RADIUS,
   CANISTER_RADIUS, TASK_RESPAWN_TIME,
+  FLOWERBED_SLOW_MULT,
 } from './types';
 import { TASK_DEFS } from '../data/tasks';
-import { isInsideBuilding, clampToMap, dist, DUMPSTER_POSITIONS } from '../data/map';
+import { isInsideBuilding, clampToMap, dist, DUMPSTER_POSITIONS, isInFlowerBed } from '../data/map';
 import type { SabotageKey } from './types';
 import { callMeeting, triggerBotSabotage, isSabotageActive } from './logic';
 import { audio } from './audio';
@@ -18,6 +19,7 @@ export function updateBots(dt: number): void {
     }
     if (bot.ambushCooldown > 0) bot.ambushCooldown -= dt;
     if (bot.siphonCooldown > 0) bot.siphonCooldown -= dt;
+    if (bot.ventCooldown > 0) bot.ventCooldown -= dt;
 
     if (bot.role === 'khozain') updateKhozainBot(bot, dt);
     else updateSlivshchikBot(bot, dt);
@@ -316,7 +318,9 @@ function moveBot(bot: Player, target: Vec2, dt: number): void {
   bot.facingAngle = Math.atan2(dy, dx);
   const nx = dx / d;
   const ny = dy / d;
-  const speed = bot.speed;
+  // §1.2 Flower-bed slow zone
+  const fbMult = isInFlowerBed(bot.pos) ? FLOWERBED_SLOW_MULT : 1;
+  const speed = bot.speed * fbMult;
   const candidate = clampToMap({ x: bot.pos.x + nx * speed * dt, y: bot.pos.y + ny * speed * dt }, 14);
   if (!isInsideBuilding(candidate, 14)) {
     bot.pos = candidate;
