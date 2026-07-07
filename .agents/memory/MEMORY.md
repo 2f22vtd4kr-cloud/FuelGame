@@ -1,0 +1,1 @@
+- [95-Y game architecture](game-architecture.md) — singleton `gs` mutated at 60fps; React HUD snapshots at 10Hz; no Zustand; Canvas 2D; bots tick inside game loop
