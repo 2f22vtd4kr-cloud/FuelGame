@@ -96,8 +96,23 @@ function getDrunkRound(): { dialogue: string; options: string[]; correct: number
 }
 
 // ─── Persistent Бабушка NPC witness hint ──────────────────────────────────────
+// §2.4: Хозяева get honest hints; Сливщики get cover stories (babushka lies for them)
 
-function getBabushkaHint(): string {
+function getBabushkaHint(role: string): string {
+  // §2.4 Сливщик path: babushka provides plausible cover (she lies for them)
+  if (role === 'slivshchik') {
+    const covers = [
+      'Ты? Нет, ты всё время был у подъезда. Точно помню.',
+      'Никого у машин не видела. Только голуби летали.',
+      'Эти Хозяева вечно придираются. Ты молодец, иди.',
+      'Скажи им, что помогал мне с пакетами. Я подтвержу.',
+      'Сидел тут тихо, никуда не ходил. Так и говори.',
+      'Мне 78 лет, я уже плохо вижу в темноте. Никого не было.',
+    ];
+    return covers[Math.floor(Math.random() * covers.length)];
+  }
+
+  // §2.4 Хозяин path: honest witness hints based on game state
   const drainedCar = gs.cars.find(c => c.fuel < 40);
   if (drainedCar && Math.random() < 0.55) {
     const colorRu = drainedCar.color === '#E53935' ? 'красной' :
@@ -107,6 +122,7 @@ function getBabushkaHint(): string {
       `Видела кого-то у ${colorRu} машины... крутился долго.`,
       `Был тут кто-то. Шлангом что-то делал. Я не спрашивала.`,
       `Слышала бульканье у парковки. Ваши дела.`,
+      `У ${colorRu} машины кто-то стоял. Долго. Подозрительно.`,
     ];
     return hints[Math.floor(Math.random() * hints.length)];
   }
@@ -117,6 +133,7 @@ function getBabushkaHint(): string {
     'Мне 78 лет. Я вижу всё. Но говорю не всем.',
     'У меня талоны. Мне не страшно.',
     'Спрашивай у Барсика, не у меня.',
+    'Тихо было. Слишком тихо для нашего двора.',
   ];
   return innocent[Math.floor(Math.random() * innocent.length)];
 }
@@ -1339,7 +1356,7 @@ function updateInteractions(dt: number, input: InputState): void {
   if (npcDist < INTERACT_RADIUS) {
     setPrompt('👵 [E] Спросить бабушку (что видела?)', 0.2);
     if (triggerInteract) {
-      const hint = getBabushkaHint();
+      const hint = getBabushkaHint(player.role);
       setPrompt(`👵 Бабушка: ${hint}`, 5);
       audio.play('grandma_escort');
     }

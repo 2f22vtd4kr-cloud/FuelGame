@@ -21,11 +21,16 @@ export default function MultiplayerLobby({ onGameStarted, onBack }: Props) {
 
   // Waiting room state
   const [network, setNetwork] = useState<GameNetwork | null>(null);
+  const networkRef = useRef<GameNetwork | null>(null); // ref for use inside intervals
   const [roomCode, setRoomCode] = useState('');
   const [lobbyPlayers, setLobbyPlayers] = useState<LobbyPlayer[]>([]);
   const [amHost, setAmHost] = useState(false);
   const [error, setError] = useState('');
   const [connecting, setConnecting] = useState(false);
+
+  // §2.1 Auto-start countdown when lobby fills to 8 players
+  const [autoStartCountdown, setAutoStartCountdown] = useState<number | null>(null);
+  const autoStartTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const charDef = CHARACTERS[character];
   const effectiveName = playerName.trim() || charDef.name;
@@ -39,6 +44,46 @@ export default function MultiplayerLobby({ onGameStarted, onBack }: Props) {
       if (!gameStartedRef.current) network?.close();
     };
   }, [network]);
+
+  // §2.1 Auto-start: when host and lobby hits 8 players, start 10s countdown.
+  // No return cleanup here — returning cleanup would reset the countdown on every
+  // dependency change (e.g. 8→9 players). Unmount cleanup lives in a separate effect.
+  useEffect(() => {
+    const shouldStart = amHost && lobbyPlayers.length >= 8 && screen === 'waiting';
+
+    if (shouldStart) {
+      // Only start a fresh countdown if one isn't already running
+      if (autoStartTimerRef.current === null) {
+        let secs = 10;
+        setAutoStartCountdown(secs);
+        autoStartTimerRef.current = setInterval(() => {
+          secs -= 1;
+          setAutoStartCountdown(secs);
+          if (secs <= 0) {
+            clearInterval(autoStartTimerRef.current!);
+            autoStartTimerRef.current = null;
+            networkRef.current?.startGame();
+          }
+        }, 1000);
+      }
+      // countdown already running — let it continue without reset
+    } else if (autoStartTimerRef.current !== null) {
+      // Conditions no longer met (player left, lost host, etc.) — cancel
+      clearInterval(autoStartTimerRef.current);
+      autoStartTimerRef.current = null;
+      setAutoStartCountdown(null);
+    }
+  }, [amHost, lobbyPlayers.length, screen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Unmount-only cleanup for auto-start timer
+  useEffect(() => {
+    return () => {
+      if (autoStartTimerRef.current !== null) {
+        clearInterval(autoStartTimerRef.current);
+        autoStartTimerRef.current = null;
+      }
+    };
+  }, []);
 
   function buildNetwork(onCreate: (net: GameNetwork) => void): void {
     setConnecting(true);
@@ -75,6 +120,7 @@ export default function MultiplayerLobby({ onGameStarted, onBack }: Props) {
         setScreen('menu');
       },
     });
+    networkRef.current = net;
     setNetwork(net);
     // Wait for open — buffered send handles it
     onCreate(net);
@@ -158,6 +204,43 @@ export default function MultiplayerLobby({ onGameStarted, onBack }: Props) {
           </div>
         )}
 
+        {/* §2.1 Auto-start countdown banner */}
+        {autoStartCountdown !== null && (
+          <div style={{
+            width: '100%', maxWidth: 380, marginBottom: 12,
+            background: autoStartCountdown <= 3
+              ? 'rgba(244,67,54,0.20)'
+              : 'rgba(76,175,80,0.15)',
+            border: `1px solid ${autoStartCountdown <= 3 ? '#F44336' : '#4CAF50'}`,
+            borderRadius: 10, padding: '12px 16px',
+            textAlign: 'center',
+          }}>
+            <div style={{
+              fontSize: 22, fontWeight: 900,
+              color: autoStartCountdown <= 3 ? '#F44336' : '#4CAF50',
+              letterSpacing: 1,
+            }}>
+              🚀 Игра начнётся через {autoStartCountdown}с
+            </div>
+            <div style={{ fontSize: 10, color: '#9E9E9E', marginTop: 4 }}>
+              Двор полон — все игроки в сборе!
+            </div>
+            {/* Countdown progress bar */}
+            <div style={{
+              height: 4, background: 'rgba(255,255,255,0.1)',
+              borderRadius: 2, marginTop: 8, overflow: 'hidden',
+            }}>
+              <div style={{
+                height: '100%',
+                width: `${(autoStartCountdown / 10) * 100}%`,
+                background: autoStartCountdown <= 3 ? '#F44336' : '#4CAF50',
+                borderRadius: 2,
+                transition: 'width 1s linear, background 0.3s',
+              }} />
+            </div>
+          </div>
+        )}
+
         <div style={{ width: '100%', maxWidth: 380, display: 'flex', gap: 10 }}>
           <button onClick={onBack} style={secondaryBtn}>← Выйти</button>
           {amHost && (
@@ -171,12 +254,14 @@ export default function MultiplayerLobby({ onGameStarted, onBack }: Props) {
                 cursor: lobbyPlayers.length < 1 ? 'not-allowed' : 'pointer',
               }}
             >
-              🚀 Начать игру
+              {autoStartCountdown !== null ? `⏱ ${autoStartCountdown}с — Начать сейчас` : '🚀 Начать игру'}
             </button>
           )}
           {!amHost && (
             <div style={{ flex: 2, color: '#666', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              Ожидание хоста...
+              {autoStartCountdown !== null
+                ? <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>🚀 Старт через {autoStartCountdown}с...</span>
+                : 'Ожидание хоста...'}
             </div>
           )}
         </div>
