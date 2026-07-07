@@ -33,8 +33,9 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
   });
 
   const touchInteractRef = useRef(false);
-  const touchSprintRef = useRef(false);
+  const touchSprintRef = useRef(false);   // mobile toggle state
   const touchCrouchRef = useRef(false);
+  const sprintToggleRef = useRef(false);  // keyboard sprint toggle state
 
   const [showEmoteWheel, setShowEmoteWheel] = useState(false);
 
@@ -45,6 +46,10 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
            'w','a','s','d','W','A','S','D',' ','e','E',
            'Shift','Control','q','Q'].includes(e.key)) {
         e.preventDefault();
+      }
+      // Sprint toggle on Shift press (§13.1)
+      if (e.key === 'Shift' && !keysRef.current.has('Shift')) {
+        sprintToggleRef.current = !sprintToggleRef.current;
       }
       keysRef.current.add(e.key);
       if (e.key === 'q' || e.key === 'Q') {
@@ -98,7 +103,7 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
       else { inp.dx = joy.dx; inp.dy = joy.dy; }
 
       inp.interact = keys.has('e') || keys.has('E') || keys.has(' ') || touchInteractRef.current;
-      inp.sprint = keys.has('Shift') || touchSprintRef.current;
+      inp.sprint = sprintToggleRef.current || touchSprintRef.current;
       inp.crouch = keys.has('Control') || touchCrouchRef.current;
 
       if (network) {
@@ -152,8 +157,8 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
     touchInteractRef.current = active;
   }, []);
 
-  const onSprint = useCallback((active: boolean) => {
-    touchSprintRef.current = active;
+  const onSprint = useCallback(() => {
+    touchSprintRef.current = !touchSprintRef.current;
   }, []);
 
   const onCrouch = useCallback((active: boolean) => {
@@ -189,7 +194,7 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
         display: 'flex', flexDirection: 'column', gap: 8,
         pointerEvents: 'all',
       }}>
-        <button onPointerDown={() => onSprint(true)} onPointerUp={() => onSprint(false)} onPointerLeave={() => onSprint(false)} style={mobileBtn('#FFD700')}>🏃</button>
+        <button onClick={onSprint} style={mobileBtn('#FFD700')}>🏃</button>
         <button onPointerDown={() => onCrouch(true)} onPointerUp={() => onCrouch(false)} onPointerLeave={() => onCrouch(false)} style={mobileBtn('#90CAF9')}>🦆</button>
         <button onPointerDown={() => setShowEmoteWheel(v => !v)} style={mobileBtn('#FF8A65')}>😂</button>
       </div>
@@ -228,7 +233,7 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
         pointerEvents: 'none',
       }}>
         WASD — движение &nbsp;|&nbsp; E/Пробел — взаимодействие<br />
-        Shift — спринт &nbsp;|&nbsp; Ctrl — присесть &nbsp;|&nbsp; Q — эмоции
+        Shift — спринт (toggle) &nbsp;|&nbsp; Ctrl — присесть &nbsp;|&nbsp; Q — эмоции
         {network && <><br /><span style={{ color: 'rgba(0,230,118,0.6)' }}>🌐 Мультиплеер</span></>}
       </div>
     </div>

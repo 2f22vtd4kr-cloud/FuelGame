@@ -159,6 +159,18 @@ function updateKhozainBot(bot: Player, dt: number): void {
       if (_sprintTimer.has(key)) _sprintTimer.delete(key);
     }
   }
+  // §4.3 Task-skip suspicion: player hovers near task terminal but doesn't start it → suspicious
+  const humanPlayer = gs.players.find(p => p.isHuman && p.isAlive);
+  if (humanPlayer && dist(bot.pos, humanPlayer.pos) < 260) {
+    const nearTerminal = gs.tasks.find(t =>
+      !t.isComplete && dist(humanPlayer.pos, t.pos) < 55 && t.doer !== humanPlayer.id
+    );
+    if (nearTerminal) {
+      // Human is loitering near a task terminal without doing it — raise suspicion slowly
+      raiseSuspicion(bot, humanPlayer.id, 0.04 * dt);
+    }
+  }
+
   // §4.3 Дядя Серёжа bias — older man looks harmless (ageism satire)
   for (const p of gs.players) {
     if (p.character === 'uncle_seryozha' && p.isAlive && p.id !== bot.id) {
@@ -237,6 +249,24 @@ function updateSlivshchikBot(bot: Player, dt: number): void {
     p.id !== bot.id && p.isAlive && p.role === 'khozain' && dist(bot.pos, p.pos) < BOT_FLEE_RADIUS
   );
   const isWatched = watchers.length > 0;
+
+  // §4.2 Vent escape — Hard/Nightmare: teleport between dumpsters when cornered while carrying or fleeing
+  const isHardMode = gs.botDifficulty === 'hard' || gs.botDifficulty === 'nightmare';
+  if (isHardMode && bot.ventCooldown <= 0 && watchers.length > 0 &&
+      (bot.botState === 'fleeing' || bot.isCarryingCanister)) {
+    // Pick the dumpster furthest from all watchers
+    let bestDumpster = DUMPSTER_POSITIONS[0];
+    let bestMinDist = -Infinity;
+    for (const dp of DUMPSTER_POSITIONS) {
+      if (dist(bot.pos, dp) < 30) continue; // don't teleport to current position
+      const minWatcherDist = Math.min(...watchers.map(w => dist(dp, w.pos)));
+      if (minWatcherDist > bestMinDist) { bestMinDist = minWatcherDist; bestDumpster = dp; }
+    }
+    bot.pos = { x: bestDumpster.x + (Math.random() - 0.5) * 20, y: bestDumpster.y + (Math.random() - 0.5) * 20 };
+    bot.ventCooldown = 28 + Math.random() * 8;
+    bot.botState = 'idle';
+    return;
+  }
 
   // If fleeing
   if (bot.botState === 'fleeing') {

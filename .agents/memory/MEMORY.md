@@ -6,3 +6,4 @@
 - [95-Y Vol1 gap mechanics](game-vol1-gaps.md) — briefing/flowerbeds/dumpster-vent/siphon-audio/crouch-stealth; briefing uses gs.briefingTimer as single source of truth (no React timer)
 - [95-Y multiplayer](game-multiplayer.md) — WS at /api/ws; tickGameMulti 3-phase design avoids N× timer bugs; gameActions.ts proxy layer; room.ts handles disconnect/host-reassign
 - [95-Y Vol1 gaps](game-vol1-gaps.md) — match timer, neutral roles (barsik/cop/janitor), bot pipe-burst fix, skip-discussion majority, per-player stats, share card PNG, Барсик smaller circle
+- [95-Y audio and sprint](game-audio-sprint.md) — §8.1 music system + §8.2 12 new SFX; sprint is now a toggle (Shift key); music lifecycle wired to phase transitions in tickGame top-level guard

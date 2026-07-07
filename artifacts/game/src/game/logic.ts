@@ -25,6 +25,10 @@ import { NEWS_HEADLINES, TICKER_INTERVAL } from '../data/ticker';
 import { updateBots } from './botAI';
 import { audio } from './audio';
 
+// ─── Module-level state ───────────────────────────────────────────────────────
+let _prevPhase: string = '';      // for music phase-transition detection
+let _footstepTimer = 0;           // seconds since last footstep sound
+
 // ─── Ejection texts (§2.7.6) ──────────────────────────────────────────────────
 
 const EJECTED_AS_SLIVSHCHIK: Partial<Record<string, string>> = {
@@ -73,6 +77,14 @@ const LETTER_TEXTS = [
 // ─── Main tick ────────────────────────────────────────────────────────────────
 
 export function tickGame(dt: number, input: InputState): void {
+  // §8.1 Phase-driven music — runs every frame, before any early returns
+  if (gs.phase !== _prevPhase) {
+    if (gs.phase === 'play')         audio.playMusic('play');
+    else if (gs.phase === 'meeting') audio.playMusic('meeting');
+    else                             audio.stopMusic();  // briefing, results, lobby
+    _prevPhase = gs.phase;
+  }
+
   if (gs.phase === 'briefing') {
     gs.briefingTimer = Math.max(0, gs.briefingTimer - dt);
     if (gs.briefingTimer <= 0) gs.phase = 'play';
@@ -90,6 +102,19 @@ export function tickGame(dt: number, input: InputState): void {
       gs.phase = 'results';
       audio.play('win_slivshchiki');
       return;
+    }
+
+    // Task respawn tick (must run even when mini-game is active)
+    for (const task of gs.tasks) {
+      if (task.isComplete && task.respawnTimer > 0) {
+        task.respawnTimer = Math.max(0, task.respawnTimer - dt);
+        if (task.respawnTimer === 0) {
+          task.isComplete = false;
+          task.progress = 0;
+          task.completedBy = null;
+          task.doer = null;
+        }
+      }
     }
 
     updateHumanPlayer(dt, input);
@@ -181,6 +206,22 @@ function updateHumanPlayer(dt: number, input: InputState): void {
   if (player.ambushCooldown > 0) player.ambushCooldown -= dt;
   if (player.siphonCooldown > 0) player.siphonCooldown -= dt;
   if (player.suspectedTimer > 0) player.suspectedTimer -= dt;
+
+  // §8.2 Footstep sounds (not while crouching, not while standing still)
+  if (isMoving && !player.isCrouching) {
+    const stepInterval = player.isSprinting ? 0.30 : 0.48;
+    _footstepTimer += dt;
+    if (_footstepTimer >= stepInterval) {
+      _footstepTimer = 0;
+      if (isInFlowerBed(player.pos)) {
+        audio.play('footstep_grass');
+      } else {
+        audio.play('footstep_asphalt');
+      }
+    }
+  } else {
+    _footstepTimer = 0;
+  }
 }
 
 // ─── §2.5 Task Mini-Games ─────────────────────────────────────────────────────
@@ -545,6 +586,7 @@ function completeTask(task: TaskInstance, player: Player): void {
     // §2.4 Shawarma speed boost — buying shawarma gives 10s speed boost
     if (task.defKey === 'shawarma') {
       player.speedBoostTimer = SHAWARMA_SPEED_BOOST_DURATION;
+      audio.play('shawarma_buy');
       setPrompt(`🌯 Шаверма куплена! +${taskDef.unityReward}% единства. Скорость ×1.35 на 10с! +30с времени! 🏃`, 3);
     } else {
       setPrompt(`✅ ${taskDef.label} — +${taskDef.unityReward}% единства! +30с`, 3);
@@ -552,9 +594,20 @@ function completeTask(task: TaskInstance, player: Player): void {
   } else {
     // Slivshchik faking tasks
     if (task.defKey === 'shawarma') {
+      audio.play('shawarma_buy');
       setPrompt(`🌯 Хорошая шаверма. Жаль, не помогла двору.`, 3);
     } else {
       setPrompt(`🎭 ${taskDef.label} — выглядело убедительно.`, 3);
+    }
+  }
+
+  // §4.3 Bot suspicion: seeing a player complete a task reduces suspicion
+  if (player.isHuman) {
+    for (const bot of gs.players) {
+      if (bot.isHuman || !bot.isAlive || bot.role !== 'khozain') continue;
+      if (dist(bot.pos, task.pos) < 220) {
+        bot.suspicion[player.id] = Math.max(0, (bot.suspicion[player.id] ?? 0) - 0.1);
+      }
     }
   }
 }
@@ -699,19 +752,6 @@ function updateInteractions(dt: number, input: InputState): void {
 
   // While mini-game is active the mini-game overlay owns all input
   if (gs.activeMiniGame) return;
-
-  // Respawn completed tasks
-  for (const task of gs.tasks) {
-    if (task.isComplete && task.respawnTimer > 0) {
-      task.respawnTimer = Math.max(0, task.respawnTimer - dt);
-      if (task.respawnTimer === 0) {
-        task.isComplete = false;
-        task.progress = 0;
-        task.completedBy = null;
-        task.doer = null;
-      }
-    }
-  }
 
   const chatOffline = isSabotageActive('chat_offline');
 
@@ -862,7 +902,7 @@ function updateInteractions(dt: number, input: InputState): void {
         nearCar.hasImmunity = true;
         nearCar.immunityTimer = IMMUNITY_TICKET_DURATION;
         player.hasImmunityTicket = false;
-        audio.play('task_complete');
+        audio.play('fuel_lock');
         setPrompt('🛡️ Цена зафиксирована! Сливщики в панике. В жизни тоже можно: @fuel_fuel_fuel_bot', 5);
         clearTaskDoer(player.id);
         return;
@@ -972,6 +1012,7 @@ function updateInteractions(dt: number, input: InputState): void {
             nearCar.siphoner = player.id;
             nearCar.siphonPhase = 1;
             nearCar.siphonTimer = 0;
+            audio.play('car_door');
           }
         }
       } else if (nearCar.siphoner === player.id && phase === 1) {
@@ -1058,6 +1099,8 @@ function executeAmbush(killer: Player, victim: Player): void {
   killer.ambushChargeTimer = 0;
   killer.ambushCooldown = AMBUSH_COOLDOWN;
   audio.play('ambush');
+  if (victim.isHuman) audio.play('player_death');
+  else audio.play('bot_death');
 
   const body: Body = {
     id: `body_${victim.id}_${Date.now()}`,
@@ -1400,7 +1443,7 @@ export function submitSkipDiscussion(voterId: string): void {
       timestamp: Date.now(),
     });
   }
-  audio.play('ui_click');
+  audio.play('vote_skip');
 }
 
 function endMeeting(): void {
@@ -1427,11 +1470,12 @@ function scheduleBotChatMessages(): void {
     'Я выполнял задачу.', 'Почему ты молчал?', 'Я видел канистру!', 'Давайте пропустим.',
   ];
 
+  const thisMeetingId = gs.meeting.meetingId;
   for (let i = 0; i < Math.min(bots.length, 5); i++) {
     const bot = bots[i];
     const delay = 3 + i * (4 + Math.random() * 6);
     setTimeout(() => {
-      if (!gs.meeting) return;
+      if (!gs.meeting || gs.meeting.meetingId !== thisMeetingId) return;
       const charDef = CHARACTERS[bot.character];
       let phrase: string;
       if (Math.random() < 0.6 && charDef.voiceLines.length > 0) {

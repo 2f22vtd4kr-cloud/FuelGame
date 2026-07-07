@@ -4,6 +4,7 @@ import { gs, resetGameState } from './game/state';
 import { CHARACTERS } from './data/characters';
 import { setActiveNetwork } from './game/gameActions';
 import { GameNetwork } from './game/network';
+import { audio } from './game/audio';
 import Lobby from './components/Lobby';
 import MultiplayerLobby from './components/MultiplayerLobby';
 import GameCanvas from './components/GameCanvas';
@@ -77,7 +78,16 @@ export default function App() {
     setMyPlayerId(null);
     setMultiDisconnected(false);
     resetGameState();
+    audio.stopMusic();
+    audio.playMusic('menu');
     setAppPhase('lobby');
+  }, []);
+
+  // §8.1 Play menu music on initial load (first user gesture is handled inside audio.init())
+  useEffect(() => {
+    // Delay slightly so AudioContext is allowed after mount
+    const id = setTimeout(() => { audio.playMusic('menu'); }, 300);
+    return () => clearTimeout(id);
   }, []);
 
   const isInGame = appPhase === 'briefing' || appPhase === 'play' || appPhase === 'meeting' || appPhase === 'results';
