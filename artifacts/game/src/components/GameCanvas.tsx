@@ -200,13 +200,19 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
         style={{ display: 'block', width: '100%', height: '100%', touchAction: 'none' }}
       />
 
-      <VirtualJoystick onMove={onJoystickMove} onInteract={onInteract} visible={true} />
+      <VirtualJoystick
+        onMove={onJoystickMove}
+        onInteract={onInteract}
+        onSprintToggle={onSprint}
+        onEmoteOpen={() => setShowEmoteWheel(v => !v)}
+        visible={true}
+      />
 
-      {/* Mobile action buttons */}
+      {/* Mobile action buttons — z-index 22 keeps them above the swipe overlay (z:19) and E button (z:21) */}
       <div style={{
         position: 'absolute', right: 16, bottom: 110,
         display: 'flex', flexDirection: 'column', gap: 8,
-        pointerEvents: 'all',
+        pointerEvents: 'all', zIndex: 22,
       }}>
         <button onClick={onSprint} style={mobileBtn('#FFD700')}>🏃</button>
         <button onPointerDown={() => onCrouch(true)} onPointerUp={() => onCrouch(false)} onPointerLeave={() => onCrouch(false)} style={mobileBtn('#90CAF9')}>🦆</button>

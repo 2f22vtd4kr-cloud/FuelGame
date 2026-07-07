@@ -408,17 +408,32 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
         border: `1.5px solid ${iWon ? 'rgba(76,175,80,0.4)' : 'rgba(244,67,54,0.4)'}`,
         borderRadius: 14, padding: '14px 16px', marginBottom: 16, textAlign: 'center',
       }}>
-        <div style={{ fontSize: 12, color: '#FFF', lineHeight: 1.5, marginBottom: 6 }}>
+        <div style={{ fontSize: 12, color: '#FFF', lineHeight: 1.5, marginBottom: 6, whiteSpace: 'pre-line' }}>
           {iWon
             ? '🛡️ Вы защитили двор! А в реальности?\nАИ-95 уже 87₽. Зафиксируй цену на 3 месяца:'
             : '⛽ Ваш бак пуст. Не будь жертвой сифонеров — купи талоны по старой цене:'}
         </div>
-        <div style={{
-          fontSize: 15, fontWeight: 'bold', color: '#FFD700',
-          fontFamily: 'monospace', letterSpacing: 1,
-        }}>
+        <button
+          onClick={() => {
+            const tg = (window as any).Telegram?.WebApp;
+            if (tg?.openTelegramLink) {
+              tg.openTelegramLink('https://t.me/fuel_fuel_fuel_bot');
+            } else {
+              window.open('https://t.me/fuel_fuel_fuel_bot', '_blank');
+            }
+          }}
+          style={{
+            width: '100%', padding: '8px 12px',
+            background: 'rgba(255,193,7,0.15)',
+            border: '1.5px solid rgba(255,193,7,0.5)',
+            borderRadius: 10, cursor: 'pointer',
+            fontSize: 14, fontWeight: 'bold', color: '#FFD700',
+            fontFamily: 'monospace', letterSpacing: 1,
+            marginTop: 4,
+          }}
+        >
           → @fuel_fuel_fuel_bot
-        </div>
+        </button>
       </div>
 
       {/* ── §9.4 First-win share prompt ── */}

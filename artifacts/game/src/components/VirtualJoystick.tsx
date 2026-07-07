@@ -3,17 +3,22 @@ import React, { useRef, useEffect, useCallback } from 'react';
 interface Props {
   onMove: (dx: number, dy: number) => void;
   onInteract: (pressed: boolean) => void;
+  onSprintToggle?: () => void;   // §2.2 double-tap right = sprint toggle
+  onEmoteOpen?: () => void;      // §2.2 right swipe up = emote wheel
   visible: boolean;
 }
 
 const JOYSTICK_RADIUS = 52;
 const KNOB_RADIUS = 26;
 
-export default function VirtualJoystick({ onMove, onInteract, visible }: Props) {
+export default function VirtualJoystick({ onMove, onInteract, onSprintToggle, onEmoteOpen, visible }: Props) {
   const baseRef = useRef<HTMLDivElement>(null);
   const knobRef = useRef<HTMLDivElement>(null);
   const touchIdRef = useRef<number | null>(null);
   const basePositionRef = useRef<{ x: number; y: number } | null>(null);
+  // §2.2 Double-tap sprint + swipe-up emote tracking
+  const lastInteractTapRef = useRef<number>(0);
+  const rightTouchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     e.preventDefault();
@@ -155,9 +160,45 @@ export default function VirtualJoystick({ onMove, onInteract, visible }: Props) 
         />
       </div>
 
-      {/* Interact button (right side) */}
+      {/* §2.2 Right-zone overlay: swipe-up = emote wheel */}
+      <div
+        style={{
+          position: 'fixed', right: 0, bottom: 0,
+          width: '45%', height: '55%',
+          touchAction: 'none', userSelect: 'none',
+          zIndex: 19,
+        }}
+        onTouchStart={(e) => {
+          const t = e.changedTouches[0];
+          rightTouchStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
+        }}
+        onTouchEnd={(e) => {
+          if (!rightTouchStartRef.current) return;
+          const t = e.changedTouches[0];
+          const swipeUp = rightTouchStartRef.current.y - t.clientY;
+          const swipeHoriz = Math.abs(t.clientX - rightTouchStartRef.current.x);
+          const elapsed = Date.now() - rightTouchStartRef.current.time;
+          if (swipeUp >= 40 && elapsed < 400 && swipeHoriz < swipeUp) {
+            onEmoteOpen?.();
+          }
+          rightTouchStartRef.current = null;
+        }}
+      />
+
+      {/* Interact / E button (right side) */}
       <button
-        onTouchStart={(e) => { e.preventDefault(); onInteract(true); }}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          // §2.2 Double-tap right = sprint toggle
+          const now = Date.now();
+          if (now - lastInteractTapRef.current < 300) {
+            onSprintToggle?.();
+            lastInteractTapRef.current = 0;
+          } else {
+            lastInteractTapRef.current = now;
+          }
+          onInteract(true);
+        }}
         onTouchEnd={(e) => { e.preventDefault(); onInteract(false); }}
         onMouseDown={() => onInteract(true)}
         onMouseUp={() => onInteract(false)}

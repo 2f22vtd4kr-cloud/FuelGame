@@ -439,6 +439,36 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
             🌐 Мультиплеер (с друзьями)
           </button>
 
+          {/* §10.2 Integration 03 — "Получить талоны" CTA */}
+          <button
+            onClick={() => {
+              const tg = (window as any).Telegram?.WebApp;
+              if (tg?.openTelegramLink) {
+                tg.openTelegramLink('https://t.me/fuel_fuel_fuel_bot');
+              } else {
+                window.open('https://t.me/fuel_fuel_fuel_bot', '_blank');
+              }
+            }}
+            style={{
+              width: '100%', maxWidth: 380, padding: '12px 16px',
+              background: 'linear-gradient(135deg, rgba(255,193,7,0.15) 0%, rgba(255,152,0,0.15) 100%)',
+              border: '1.5px solid rgba(255,193,7,0.45)',
+              borderRadius: 14, marginTop: 6,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              cursor: 'pointer', gap: 10,
+            }}
+          >
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#FFD700' }}>
+                🎟️ Получить талоны на бензин
+              </div>
+              <div style={{ fontSize: 9, color: '#BDBDBD', marginTop: 2 }}>
+                Зафиксируй цену АИ-95 на 3 месяца → @fuel_fuel_fuel_bot
+              </div>
+            </div>
+            <div style={{ fontSize: 14, color: '#FFD700', flexShrink: 0 }}>→</div>
+          </button>
+
           {/* §1.4 "Сегодня в ЖК" */}
           <div style={{
             width: '100%', maxWidth: 380,
