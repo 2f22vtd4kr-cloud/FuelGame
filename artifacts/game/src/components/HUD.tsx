@@ -3,10 +3,138 @@ import type { GameState, SabotageKey } from '../game/types';
 import { SPRINT_MAX, SABOTAGE_LABELS, SABOTAGE_COOLDOWNS, SABOTAGE_DURATIONS, SIPHON_AUDIO_RADIUS } from '../game/types';
 import { NEWS_HEADLINES } from '../data/ticker';
 import { CHARACTERS } from '../data/characters';
+import { MAP_W, MAP_H } from '../data/map';
 import { triggerSabotage, triggerEmote, PLAY_EMOTES, triggerBarsikMeow, investigateBody, janitorCollectCanister } from '../game/logic';
 import { gs } from '../game/state';
 import { audio } from '../game/audio';
 import TaskMiniGame from './TaskMiniGame';
+
+// ─── §13.1 Minimap ───────────────────────────────────────────────────────────
+const MM_W = 90;  // minimap display width px
+const MM_H = 68;  // minimap display height px (≈ MAP_H/MAP_W ratio)
+const MM_SX = MM_W / MAP_W;
+const MM_SY = MM_H / MAP_H;
+
+function Minimap({ state }: { state: GameState }) {
+  const localPlayer = state.players.find(p => p.id === state.localPlayerId);
+  return (
+    <div style={{
+      position: 'relative',
+      width: MM_W, height: MM_H,
+      background: 'rgba(10,14,20,0.88)',
+      border: '1px solid rgba(255,255,255,0.18)',
+      borderRadius: 5,
+      overflow: 'hidden',
+      flexShrink: 0,
+    }}>
+      {/* Courtyard area tint */}
+      <div style={{
+        position: 'absolute',
+        left: 90 * MM_SX, top: 90 * MM_SY,
+        width: (MAP_W - 180) * MM_SX, height: (MAP_H - 180) * MM_SY,
+        background: 'rgba(50,80,40,0.3)',
+      }} />
+      {/* Parking lot tint */}
+      <div style={{
+        position: 'absolute',
+        left: 90 * MM_SX, top: 90 * MM_SY,
+        width: (MAP_W - 180) * MM_SX, height: 380 * MM_SY,
+        background: 'rgba(80,80,80,0.25)',
+      }} />
+
+      {/* Cars */}
+      {state.cars.map(car => (
+        <div key={car.id} style={{
+          position: 'absolute',
+          left: car.pos.x * MM_SX - 3,
+          top: car.pos.y * MM_SY - 2,
+          width: 6, height: 4,
+          background: car.fuel < 10 ? '#FF1744' : car.fuel < 30 ? '#FF9800' : car.color,
+          borderRadius: 1,
+          opacity: 0.9,
+        }} />
+      ))}
+
+      {/* Tasks (incomplete only) */}
+      {state.tasks.filter(t => !t.isComplete).map(t => {
+        const localP = state.players.find(p => p.id === state.localPlayerId);
+        const color = localP?.role === 'slivshchik' ? '#888' : '#4CAF50';
+        return (
+          <div key={t.id} style={{
+            position: 'absolute',
+            left: t.pos.x * MM_SX - 2,
+            top: t.pos.y * MM_SY - 2,
+            width: 4, height: 4,
+            background: color,
+            borderRadius: '50%',
+            opacity: 0.75,
+          }} />
+        );
+      })}
+
+      {/* Immunity tickets */}
+      {state.immunityTickets.map(it => (
+        <div key={it.id} style={{
+          position: 'absolute',
+          left: it.pos.x * MM_SX - 2,
+          top: it.pos.y * MM_SY - 2,
+          width: 4, height: 4,
+          background: '#FFD700',
+          borderRadius: '50%',
+        }} />
+      ))}
+
+      {/* Bodies */}
+      {state.bodies.map(b => (
+        <div key={b.id} style={{
+          position: 'absolute',
+          left: b.pos.x * MM_SX - 2,
+          top: b.pos.y * MM_SY - 2,
+          width: 4, height: 4,
+          background: '#CC0000',
+          borderRadius: '50%',
+        }} />
+      ))}
+
+      {/* Other players */}
+      {state.players.filter(p => p.id !== state.localPlayerId && p.isAlive).map(p => {
+        const charDef = CHARACTERS[p.character];
+        return (
+          <div key={p.id} style={{
+            position: 'absolute',
+            left: p.pos.x * MM_SX - 3,
+            top: p.pos.y * MM_SY - 3,
+            width: 6, height: 6,
+            background: charDef.color,
+            borderRadius: '50%',
+            border: '1px solid rgba(255,255,255,0.4)',
+          }} />
+        );
+      })}
+
+      {/* Local player — gold dot */}
+      {localPlayer && (
+        <div style={{
+          position: 'absolute',
+          left: localPlayer.pos.x * MM_SX - 4,
+          top: localPlayer.pos.y * MM_SY - 4,
+          width: 8, height: 8,
+          background: '#FFD700',
+          borderRadius: '50%',
+          border: '1px solid #fff',
+          zIndex: 2,
+        }} />
+      )}
+
+      {/* Legend label */}
+      <div style={{
+        position: 'absolute', bottom: 1, right: 3,
+        fontSize: 6, color: 'rgba(255,255,255,0.35)',
+        userSelect: 'none', pointerEvents: 'none',
+      }}>🗺</div>
+    </div>
+  );
+}
 
 interface HUDProps {
   state: GameState;
@@ -59,10 +187,14 @@ export default function HUD({ state }: HUDProps) {
   );
 
   return (
-    <div style={{
-      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-      pointerEvents: 'none', zIndex: 10,
-    }}>
+    <div
+      data-hc={state.highContrastMode ? '1' : undefined}
+      style={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        pointerEvents: 'none', zIndex: 10,
+        filter: state.highContrastMode ? 'contrast(1.15) brightness(1.05)' : undefined,
+      }}
+    >
       {/* ── §2.5 Task mini-game overlay (full priority, intercepts pointer events) ── */}
       {state.activeMiniGame && (
         <div style={{
@@ -259,18 +391,21 @@ export default function HUD({ state }: HUDProps) {
         </div>
       </div>
 
-      {/* ── Bodies found indicator ── */}
-      {state.bodies.length > 0 && (
-        <div style={{ position: 'absolute', top: 70, right: 12 }}>
+      {/* ── §13.1 Minimap — always available, bottom-left above settings ── */}
+      <div style={{ position: 'absolute', bottom: 148, left: 12, pointerEvents: 'none' }}>
+        <Minimap state={state} />
+        {/* Bodies badge overlaid on minimap bottom */}
+        {state.bodies.length > 0 && (
           <div style={{
-            background: 'rgba(183,28,28,0.75)', borderRadius: 8,
-            padding: '4px 10px', border: '1px solid rgba(255,255,255,0.1)',
-            fontSize: 11, color: '#fff',
+            position: 'absolute', bottom: -1, right: -1,
+            background: 'rgba(183,28,28,0.92)', borderRadius: 4,
+            padding: '1px 5px',
+            fontSize: 9, color: '#fff', fontWeight: 'bold',
           }}>
-            💀 {state.bodies.length} тел
+            💀{state.bodies.length}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ── §13.1 "Что делать?" objective button ── */}
       {localPlayer.isAlive && (
@@ -770,6 +905,16 @@ export default function HUD({ state }: HUDProps) {
               />
               <span style={{ fontSize: 11, color: '#aaa' }}>💬 Простой чат-круг (6 фраз)</span>
             </label>
+
+            {/* §13.1 High contrast mode */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input type="checkbox"
+                checked={state.highContrastMode}
+                onChange={e => { gs.highContrastMode = e.target.checked; }}
+                style={{ accentColor: '#FFD700', width: 14, height: 14 }}
+              />
+              <span style={{ fontSize: 11, color: '#aaa' }}>🔆 Высокий контраст</span>
+            </label>
           </div>
         )}
         <button
@@ -809,6 +954,12 @@ export default function HUD({ state }: HUDProps) {
         @keyframes siphonPulse {
           from { opacity: 0.6; }
           to { opacity: 1; }
+        }
+        [data-hc="1"] {
+          text-shadow: 0 0 4px #000, 0 1px 3px #000 !important;
+        }
+        [data-hc="1"] div, [data-hc="1"] span, [data-hc="1"] button {
+          letter-spacing: 0.01em;
         }
       `}</style>
     </div>

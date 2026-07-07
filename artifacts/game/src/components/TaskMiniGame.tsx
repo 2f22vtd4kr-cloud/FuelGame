@@ -295,7 +295,19 @@ function Letter({ mg }: { mg: MiniGameState }) {
 // ─── §2.5 Dog Walk ────────────────────────────────────────────────────────────
 
 function DogWalk({ mg }: { mg: MiniGameState }) {
-  const waypoints = ['Детская площадка', 'Мусорки', 'Домой 🏠'];
+  // Labels and icons differ by task
+  const isHelpBags = mg.defKey === 'help_bags';
+  const isFindCat  = mg.defKey === 'find_cat';
+  const waypoints = isHelpBags
+    ? ['К лифту', 'К выходу', 'До двери 🚪']
+    : isFindCat
+      ? ['У мусорок', 'За скамейкой', 'В кустах 🌿']
+      : ['Детская площадка', 'Мусорки', 'Домой 🏠'];
+  const icon = isHelpBags ? '🛍️' : isFindCat ? '🐱' : '🐕';
+  const actionLabel = isHelpBags ? 'Держим сумки!' : isFindCat ? 'Ищем Барсика!' : 'Держать поводок!';
+  const progressLabel = isHelpBags ? 'несём сумки' : isFindCat ? 'ищем кота' : 'держим поводок';
+  const doneLabel = isHelpBags ? '✅ Сумки доставлены!' : isFindCat ? '✅ Барсик найден!' : '✅ Прогулка завершена!';
+
   const tapProgress = mg.requiredTaps > 0 ? (mg.tapCount / mg.requiredTaps) * 100 : 0;
 
   return (
@@ -312,7 +324,7 @@ function DogWalk({ mg }: { mg: MiniGameState }) {
               border: `2px solid ${i < mg.dogWaypoint ? '#4CAF50' : i === mg.dogWaypoint ? '#FF9800' : 'rgba(255,255,255,0.12)'}`,
               transition: 'all 0.2s',
             }}>
-              {i < mg.dogWaypoint ? '✓' : i === mg.dogWaypoint ? '🐕' : '·'}
+              {i < mg.dogWaypoint ? '✓' : i === mg.dogWaypoint ? icon : '·'}
             </div>
             <div style={{ fontSize: 8, color: i === mg.dogWaypoint ? '#FFB74D' : '#666', maxWidth: 60 }}>
               {name}
@@ -324,7 +336,7 @@ function DogWalk({ mg }: { mg: MiniGameState }) {
       {mg.dogWaypoint < mg.dogRequired ? (
         <>
           <div style={{ fontSize: 12, color: '#FFB74D', marginBottom: 10 }}>
-            Бакс тянет к {waypoints[mg.dogWaypoint]}...
+            {icon} {isFindCat ? 'Ищем у: ' : isHelpBags ? 'Несём к: ' : 'Бакс тянет к '}{waypoints[mg.dogWaypoint]}
           </div>
           {/* Tap progress bar */}
           <div style={{ marginBottom: 10 }}>
@@ -335,7 +347,7 @@ function DogWalk({ mg }: { mg: MiniGameState }) {
               }} />
             </div>
             <div style={{ fontSize: 10, color: '#aaa', marginTop: 4 }}>
-              {mg.tapCount}/{mg.requiredTaps} — держим поводок
+              {mg.tapCount}/{mg.requiredTaps} — {progressLabel}
             </div>
           </div>
           <div style={{ fontSize: 10, color: mg.timeLimit < 2 ? '#F44336' : '#888', marginBottom: 12 }}>
@@ -350,11 +362,11 @@ function DogWalk({ mg }: { mg: MiniGameState }) {
               borderRadius: 14, color: '#fff', fontSize: 16, cursor: 'pointer', fontWeight: 'bold',
             }}
           >
-            🐕 Держать поводок!
+            {icon} {actionLabel}
           </button>
         </>
       ) : (
-        <div style={{ color: '#4CAF50', fontSize: 14, padding: '16px 0' }}>✅ Прогулка завершена!</div>
+        <div style={{ color: '#4CAF50', fontSize: 14, padding: '16px 0' }}>{doneLabel}</div>
       )}
     </div>
   );

@@ -117,6 +117,60 @@ export const TASK_DEFS: Record<TaskDefKey, TaskDef> = {
     unityReward: 7,
     color: '#FFD600',
   },
+  // §2.5 Task 12 — Help carry bags (walk NPC to entrance)
+  help_bags: {
+    key: 'help_bags',
+    label: 'Помочь с сумками',
+    emoji: '🛍️',
+    duration: 12,
+    unityReward: 10,
+    color: '#AB47BC',
+  },
+  // §2.5 Task 14 — Find the cat (walk to hiding spots)
+  find_cat: {
+    key: 'find_cat',
+    label: 'Найти Барсика',
+    emoji: '🐱',
+    duration: 10,
+    unityReward: 9,
+    color: '#FF7043',
+  },
+  // §2.5 Task 15 — Fix the swing (rhythm tap 4 beats)
+  fix_swing: {
+    key: 'fix_swing',
+    label: 'Починить качели',
+    emoji: '🛺',
+    duration: 6,
+    unityReward: 8,
+    color: '#26C6DA',
+  },
+  // §2.5 Task 17 — Water the lawn (rapid taps = circular motion)
+  water_lawn: {
+    key: 'water_lawn',
+    label: 'Полить газон',
+    emoji: '💧',
+    duration: 6,
+    unityReward: 8,
+    color: '#29B6F6',
+  },
+  // §2.5 Task 18 — Check the meter (tap 4 digits ascending)
+  check_meter: {
+    key: 'check_meter',
+    label: 'Проверить счётчик',
+    emoji: '📊',
+    duration: 5,
+    unityReward: 7,
+    color: '#9CCC65',
+  },
+  // §2.5 Task 20 — Close the tap (rotate dial 720° = 2 full stops)
+  close_tap: {
+    key: 'close_tap',
+    label: 'Закрыть кран',
+    emoji: '🔧',
+    duration: 4,
+    unityReward: 7,
+    color: '#5C6BC0',
+  },
 };
 
 export function getTaskDef(key: TaskDefKey): TaskDef {

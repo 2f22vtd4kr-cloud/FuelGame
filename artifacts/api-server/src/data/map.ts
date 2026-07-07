@@ -74,6 +74,18 @@ export const TASK_SPAWNS: TaskSpawnDef[] = [
   { id: 'task_flowers',  defKey: 'flowers',  pos: { x: 850, y: 560 } },
   { id: 'task_kvass',    defKey: 'kvass',    pos: { x: 1050, y: 530 } },
   { id: 'task_sweep',    defKey: 'sweep',    pos: { x: 800, y: 700 } },
+  // §2.5 Tasks 06, 07, 08, 10
+  { id: 'task_dog_walk',     defKey: 'dog_walk',     pos: { x: 870, y: 630 } },
+  { id: 'task_flower_match', defKey: 'flower_match', pos: { x: 510, y: 790 } },
+  { id: 'task_drunk_calm',   defKey: 'drunk_calm',   pos: { x: 1050, y: 660 } },
+  { id: 'task_taxi_order',   defKey: 'taxi_order',   pos: { x: 750, y: 390 } },
+  // §2.5 Tasks 12, 14, 15, 17, 18, 20
+  { id: 'task_help_bags',    defKey: 'help_bags',    pos: { x: 300, y: 560 } },
+  { id: 'task_find_cat',     defKey: 'find_cat',     pos: { x: 950, y: 390 } },
+  { id: 'task_fix_swing',    defKey: 'fix_swing',    pos: { x: 380, y: 640 } },
+  { id: 'task_water_lawn',   defKey: 'water_lawn',   pos: { x: 680, y: 560 } },
+  { id: 'task_check_meter',  defKey: 'check_meter',  pos: { x: 150, y: 290 } },
+  { id: 'task_close_tap',    defKey: 'close_tap',    pos: { x: 1020, y: 390 } },
 ];
 
 // ─── Sabotage positions (§2.9) ────────────────────────────────────────────────

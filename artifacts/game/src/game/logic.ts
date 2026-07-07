@@ -317,24 +317,27 @@ function startMiniGame(taskId: string, defKey: string, type: MiniGameType): void
     requiredHits: defKey === 'shawarma' ? 3 : 2,
     // rapid_tap / dog_walk
     tapCount: 0,
-    requiredTaps: defKey === 'pigeons' ? 15 : type === 'dog_walk' ? 5 : 12,
-    timeLimit: defKey === 'pigeons' ? 7 : type === 'dog_walk' ? 7 : 5,
-    timeLimitMax: defKey === 'pigeons' ? 7 : type === 'dog_walk' ? 7 : 5,
-    // sequence
-    sequence: [
-      Math.floor(Math.random() * 9) + 1,
-      Math.floor(Math.random() * 9) + 1,
-      Math.floor(Math.random() * 9) + 1,
-      Math.floor(Math.random() * 9) + 1,
-    ],
+    requiredTaps: defKey === 'pigeons' ? 15 : defKey === 'fix_swing' ? 8 : defKey === 'water_lawn' ? 12 : type === 'dog_walk' ? 5 : 12,
+    timeLimit: defKey === 'pigeons' ? 7 : defKey === 'fix_swing' ? 6 : defKey === 'water_lawn' ? 6 : type === 'dog_walk' ? 10 : 5,
+    timeLimitMax: defKey === 'pigeons' ? 7 : defKey === 'fix_swing' ? 6 : defKey === 'water_lawn' ? 6 : type === 'dog_walk' ? 10 : 5,
+    // sequence — check_meter generates ascending 4-digit reading
+    sequence: (() => {
+      const seq = [
+        Math.floor(Math.random() * 9) + 1,
+        Math.floor(Math.random() * 9) + 1,
+        Math.floor(Math.random() * 9) + 1,
+        Math.floor(Math.random() * 9) + 1,
+      ];
+      return defKey === 'check_meter' ? seq.slice().sort((a, b) => a - b) : seq;
+    })(),
     seqIndex: 0,
     seqWrong: false,
-    // dial
+    // dial — close_tap requires 2 stops (720°), default 3
     dialAngle: 0,
     dialTarget: Math.floor(Math.random() * 360),
     dialGreenWidth: 22,
     dialStops: 0,
-    dialRequiredStops: 3,
+    dialRequiredStops: defKey === 'close_tap' ? 2 : 3,
     // letter
     letterText,
     // choice (flower_match & drunk_calm)

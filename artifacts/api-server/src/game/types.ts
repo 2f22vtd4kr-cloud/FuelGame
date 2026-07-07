@@ -31,7 +31,10 @@ export interface CharacterDef {
 
 export type TaskDefKey =
   | 'shawarma' | 'intercom' | 'trash' | 'window' | 'grandma'
-  | 'mailbox' | 'pigeons' | 'flowers' | 'kvass' | 'sweep';
+  | 'mailbox' | 'pigeons' | 'flowers' | 'kvass' | 'sweep'
+  | 'dog_walk' | 'flower_match' | 'drunk_calm' | 'taxi_order'
+  | 'help_bags' | 'find_cat' | 'fix_swing' | 'water_lawn'
+  | 'check_meter' | 'close_tap';
 
 export interface TaskDef {
   key: TaskDefKey;
@@ -60,13 +63,24 @@ export type MiniGameType = 'tap_timing' | 'rapid_tap' | 'sequence' | 'dial' | 'l
 
 /** Which mini-game type each task uses. Unmapped tasks use the hold-timer. */
 export const TASK_MINIGAME_MAP: Partial<Record<TaskDefKey, MiniGameType>> = {
-  shawarma: 'tap_timing',
-  kvass:    'tap_timing',
-  intercom: 'sequence',
-  pigeons:  'rapid_tap',
-  sweep:    'rapid_tap',
-  window:   'dial',
-  mailbox:  'letter',
+  shawarma:     'tap_timing',
+  kvass:        'tap_timing',
+  intercom:     'sequence',
+  pigeons:      'rapid_tap',
+  sweep:        'rapid_tap',
+  window:       'dial',
+  mailbox:      'letter',
+  dog_walk:     'dog_walk',
+  flower_match: 'flower_match',
+  drunk_calm:   'drunk_calm',
+  taxi_order:   'taxi_order',
+  // §2.5 Tasks 11-20
+  help_bags:    'dog_walk',
+  find_cat:     'dog_walk',
+  fix_swing:    'rapid_tap',
+  water_lawn:   'rapid_tap',
+  check_meter:  'sequence',
+  close_tap:    'dial',
 };
 
 export interface MiniGameState {

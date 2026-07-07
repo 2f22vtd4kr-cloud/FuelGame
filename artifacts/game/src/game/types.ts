@@ -32,7 +32,9 @@ export interface CharacterDef {
 export type TaskDefKey =
   | 'shawarma' | 'intercom' | 'trash' | 'window' | 'grandma'
   | 'mailbox' | 'pigeons' | 'flowers' | 'kvass' | 'sweep'
-  | 'dog_walk' | 'flower_match' | 'drunk_calm' | 'taxi_order';
+  | 'dog_walk' | 'flower_match' | 'drunk_calm' | 'taxi_order'
+  | 'help_bags' | 'find_cat' | 'fix_swing' | 'water_lawn'
+  | 'check_meter' | 'close_tap';
 
 export interface TaskDef {
   key: TaskDefKey;
@@ -73,6 +75,13 @@ export const TASK_MINIGAME_MAP: Partial<Record<TaskDefKey, MiniGameType>> = {
   flower_match: 'flower_match',
   drunk_calm:   'drunk_calm',
   taxi_order:   'taxi_order',
+  // §2.5 Tasks 11-20
+  help_bags:    'dog_walk',
+  find_cat:     'dog_walk',
+  fix_swing:    'rapid_tap',
+  water_lawn:   'rapid_tap',
+  check_meter:  'sequence',
+  close_tap:    'dial',
 };
 
 export interface MiniGameState {
@@ -378,6 +387,7 @@ export interface GameState {
   immunityTickets: ImmunityTicket[];
   // §13.1 Accessibility settings
   colorblindMode: boolean;
+  highContrastMode: boolean;
   volumeMaster: number;   // 0-1
   volumeMusic: number;    // 0-1
   volumeSfx: number;      // 0-1

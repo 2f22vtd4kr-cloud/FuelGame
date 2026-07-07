@@ -1,6 +1,6 @@
 ---
 name: 95-Y Vol1 gap mechanics
-description: All Vol1 gap features implemented in the "Set up the imported project" task
+description: All Vol1 gap features implemented; now 20 tasks total, minimap, high contrast mode
 ---
 
 ## Features implemented
@@ -8,57 +8,46 @@ description: All Vol1 gap features implemented in the "Set up the imported proje
 ### Match timer (§2.1)
 - `matchTimeLimit: number` on GameState (default 300s)
 - Counts down in tickGame play phase; Сливщики win on expiry
-- Task completion (`completeTask`) adds +30s (capped at 600s total)
-- Bot task completion also extends via botAI.ts
-- HUD shows countdown clock (not count-up); turns red at <60s
+- Task completion adds +30s (capped at 600s); HUD shows countdown, red at <60s
 
 ### Skip discussion by majority (§2.7.4)
 - `skipDiscussionVotes: string[]` on MeetingState
-- `submitSkipDiscussion(voterId)` exported from logic.ts and gameActions.ts
-- `tickMeeting` advances to voting when skipVotes > aliveCount/2
+- `submitSkipDiscussion(voterId)` in logic.ts/gameActions.ts
 - MeetingScreen shows "⏭️ К голосованию" button + progress counter
-- api-server room.ts handles `skip_discussion` action for multiplayer parity
 
 ### Neutral roles (§3.1.3)
-- `neutralRole: NeutralRole | null` and `barsikMeowCooldown`, `canistersCollected` on Player
-- Assigned in startGame for 6+ player games (1 khozain gets neutral role)
-- Барсик character gets 'barsik' neutral if in game; otherwise random khozain
-- `updateNeutralMechanics(dt)` called each play tick
-- Barsik auto-meows when within 200px of active siphon (12s cooldown); manual meow via HUD (15s cd)
-- Meow interrupts the siphon and knocks canister (creates evidence)
-- Участковый: investigate body ability (reveals satirical clue)
-- Дворник: collect canister ability (removes from world, no carry state)
+- `neutralRole`, `barsikMeowCooldown`, `canistersCollected` on Player
+- Barsik auto-meows near siphon; Участковый investigates bodies; Дворник collects canisters
 - HUD shows neutral role buttons + emoji on role badge
-- Janitor does NOT use isCarryingCanister (that's slivshchik-only)
 
-### Bot pipe_burst resolution
-- `updateKhozainBot` priority-0 check for active pipe_burst
-- Bot finds nearest unfinished valve, moves to it, increments progress
-- botState 'fix_sabotage' prevents other behaviors while fixing
-- Independent resolution check in updateSabotages catches bot-driven completions
+### 20 tasks total (§2.5)
+Original 10: shawarma, intercom, trash, window, grandma, mailbox, pigeons, flowers, kvass, sweep
+Session-3 tasks: dog_walk, flower_match, drunk_calm, taxi_order
+Session-5 new tasks: help_bags, find_cat, fix_swing, water_lawn, check_meter, close_tap
 
-### Canister-carrying slivshchik → Хозяин meeting (§2.4)
-- In updateInteractions: khozain within 280px of slivshchik carrying canister
-- Prompt shown; E calls meeting with reason 'alarm'
+**Mini-game mappings for new tasks:**
+- help_bags → dog_walk (waypoints: 3 stops, 10s limit, uses DogWalk UI with 🛍️ icon)
+- find_cat → dog_walk (waypoints: 3 spots, 10s limit, uses DogWalk UI with 🐱 icon)
+- fix_swing → rapid_tap (8 taps, 6s)
+- water_lawn → rapid_tap (12 taps, 6s)
+- check_meter → sequence (4 digits, ascending order sort applied)
+- close_tap → dial (2 stops instead of default 3)
 
-### Per-player stats (§9.1)
-- `fuelSiphoned: number` tracked in updateSiphoning (delta per frame)
-- `tasksCompleted: number` tracked in completeTask (khozain) and botAI task completion
-- Displayed in GameResults per-player breakdown table
+**DogWalk UI is context-aware:** reads mg.defKey to show correct labels/icons for help_bags/find_cat vs dog_walk.
 
-### Барсик smaller circle
-- renderer.ts: `playerRadius = player.character === 'barsik' ? 10 : 14`
-- facingDist also adjusted proportionally
+### Minimap (§13.1)
+- `Minimap` React component in HUD.tsx, scaled to MAP_W×MAP_H
+- Position: `bottom: 148, left: 12` (above settings button, clears all other controls)
+- Shows: players (colored dots), local player (gold), cars, incomplete tasks (green dots), bodies (red badge), immunity tickets (gold dots)
 
-### Results screen & share card (§9.1)
-- GameResults.tsx has per-player breakdown with fuelSiphoned/tasksCompleted
-- "📸 Скачать карточку результата" button generates 1080×1080 PNG via Canvas API
-- PNG includes match stats, personal stats, @fuel_fuel_fuel_bot CTA
+### High contrast mode (§13.1)
+- `highContrastMode: boolean` on GameState + gs init
+- Toggle in settings panel
+- Applied as `filter: contrast(1.15) brightness(1.05)` on HUD container + `data-hc` CSS hook
 
 ## Sync notes
-- api-server has its own types.ts/state.ts/logic.ts copies that were all updated
-- api-server state.ts `createInitialState()` + `makePlayer()` both have new fields
-- api-server callMeeting initializes skipDiscussionVotes: []
+- api-server types.ts/tasks.ts/map.ts/logic.ts all mirrored with same 20-task schema
 - Pre-existing api-server TS error (api-zod/dist not built) is unrelated to these changes
+- api-server logic.ts uses same defKey-based config for fix_swing/water_lawn/close_tap/check_meter
 
-**Why:** All of these were Vol1 gaps per the design doc that needed filling before Vol1 can be considered complete.
+**Why:** Remaining Vol1 gap features needed to reach full doc alignment before moving to Vol2.

@@ -37,6 +37,7 @@ export function createInitialState(): GameState {
     botDifficulty: 'medium',
     immunityTickets: [],
     colorblindMode: false,
+    highContrastMode: false,
     volumeMaster: 0.55,
     volumeMusic: 1.0,
     volumeSfx: 1.0,
