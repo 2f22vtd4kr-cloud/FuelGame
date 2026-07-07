@@ -10,7 +10,7 @@ export type ClientMsg =
   | { type: 'start' }
   | { type: 'input'; dx: number; dy: number; interact: boolean; prevInteract: boolean; sprint: boolean; crouch: boolean; emoteIndex: number | null }
   | { type: 'vote'; targetId: string | null }
-  | { type: 'action'; action: 'minigame_tap' | 'minigame_digit' | 'minigame_choice' | 'minigame_taxi_tap' | 'minigame_cancel' | 'emote'; payload?: Record<string, unknown> };
+  | { type: 'action'; action: 'minigame_tap' | 'minigame_digit' | 'minigame_choice' | 'minigame_taxi_tap' | 'minigame_cancel' | 'minigame_wire_source' | 'minigame_wire_socket' | 'emote'; payload?: Record<string, unknown> };
 
 // ─── Server → Client ────────────────────────────────────────────────────────
 

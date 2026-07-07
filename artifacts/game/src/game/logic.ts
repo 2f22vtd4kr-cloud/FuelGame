@@ -305,6 +305,15 @@ function startMiniGame(taskId: string, defKey: string, type: MiniGameType): void
     letterText = round.dialogue;
   }
 
+  // ── wire_drag: shuffle sockets ──
+  let wireSockets = [0, 1, 2];
+  if (type === 'wire_drag') {
+    for (let i = wireSockets.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [wireSockets[i], wireSockets[j]] = [wireSockets[j], wireSockets[i]];
+    }
+  }
+
   gs.activeMiniGame = {
     taskId,
     defKey: defKey as import('./types').TaskDefKey,
@@ -352,6 +361,10 @@ function startMiniGame(taskId: string, defKey: string, type: MiniGameType): void
     // taxi_order
     taxiPhase: 'order',
     taxiWaitTimer: 0,
+    // wire_drag
+    wireSockets,
+    wireConnected: [false, false, false],
+    wireDragging: -1,
     // shared
     feedback: 'none',
     feedbackTimer: 0,
@@ -523,6 +536,49 @@ function updateMiniGame(dt: number, input: InputState): void {
       }
       break;
     }
+
+    case 'wire_drag': {
+      // Pure React UI — no per-frame updates needed; done flag set by onMiniGameWireSource/Socket
+      break;
+    }
+  }
+}
+
+/** §2.5 Wire-drag: select a source wire by color index (0=red,1=blue,2=green) */
+export function onMiniGameWireSource(colorIndex: number): void {
+  const mg = gs.activeMiniGame;
+  if (!mg || mg.type !== 'wire_drag') return;
+  if (mg.wireConnected[colorIndex]) return; // already done
+  mg.wireDragging = colorIndex;
+  mg.feedback = 'none';
+}
+
+/** §2.5 Wire-drag: attempt to connect selected source to socket at given position index */
+export function onMiniGameWireSocket(socketPos: number): void {
+  const mg = gs.activeMiniGame;
+  if (!mg || mg.type !== 'wire_drag') return;
+  if (mg.wireDragging < 0) return;
+  const player = gs.players.find(p => p.id === gs.localPlayerId);
+  const task = gs.tasks.find(t => t.id === mg.taskId);
+  if (!player || !task || dist(player.pos, task.pos) > INTERACT_RADIUS * 1.6) {
+    cancelMiniGame(); return;
+  }
+
+  const socketColor = mg.wireSockets[socketPos];
+  if (socketColor === mg.wireDragging) {
+    // Correct match
+    mg.wireConnected[mg.wireDragging] = true;
+    mg.feedback = 'hit';
+    mg.feedbackTimer = 0.4;
+    mg.wireDragging = -1;
+    audio.play('task_complete');
+    if (mg.wireConnected.every(Boolean)) mg.done = true;
+  } else {
+    // Wrong socket
+    mg.feedback = 'miss';
+    mg.feedbackTimer = 0.4;
+    mg.wireDragging = -1;
+    audio.play('ui_click');
   }
 }
 

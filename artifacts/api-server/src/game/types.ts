@@ -59,7 +59,7 @@ export interface TaskInstance {
 // ─── Task Mini-Games (§2.5) ───────────────────────────────────────────────────
 
 export type MiniGameType = 'tap_timing' | 'rapid_tap' | 'sequence' | 'dial' | 'letter'
-  | 'dog_walk' | 'flower_match' | 'drunk_calm' | 'taxi_order';
+  | 'dog_walk' | 'flower_match' | 'drunk_calm' | 'taxi_order' | 'wire_drag';
 
 /** Which mini-game type each task uses. Unmapped tasks use the hold-timer. */
 export const TASK_MINIGAME_MAP: Partial<Record<TaskDefKey, MiniGameType>> = {
@@ -68,7 +68,7 @@ export const TASK_MINIGAME_MAP: Partial<Record<TaskDefKey, MiniGameType>> = {
   intercom:     'sequence',
   pigeons:      'rapid_tap',
   sweep:        'rapid_tap',
-  window:       'dial',
+  window:       'wire_drag',
   mailbox:      'letter',
   dog_walk:     'dog_walk',
   flower_match: 'flower_match',
@@ -122,6 +122,10 @@ export interface MiniGameState {
   // ── taxi_order: 3-phase phone interaction ──
   taxiPhase: 'order' | 'wait' | 'confirm';
   taxiWaitTimer: number;
+  // ── wire_drag: connect matching colored wires ──
+  wireSockets: number[];    // shuffled socket color indices per position [0=red,1=blue,2=green]
+  wireConnected: boolean[]; // per color: is this pair done?
+  wireDragging: number;     // -1=none, else colorIndex selected
   // ── shared feedback ──
   feedback: 'none' | 'hit' | 'miss';
   feedbackTimer: number;

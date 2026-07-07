@@ -13,12 +13,27 @@ description: Design-doc Volume 1 implementation status, patterns, and critical b
 - **Canister evidence** — `Canister` struct in `gs.canisters`. Khozain picks up → evidence at meeting. Slivshchik picks up → can dispose at dumpster. Carrying slows player 20%.
 - **Meeting triggers** — Alarm (entrance arch), body report, drained car (<10%); all gated by MEETING_COOLDOWN=30s.
 - **20 ejection texts** — 10 siphoner + 10 innocent, randomly chosen.
-- **10 tasks** — shawarma, intercom, trash, window, grandma, mailbox, pigeons, flowers, kvass, sweep. Each 7–8% unity reward.
+- **20 tasks** — shawarma, intercom, trash, window, grandma, mailbox, pigeons, flowers, kvass, sweep, dog_walk, flower_match, drunk_calm, taxi_order, help_bags, find_cat, fix_swing, water_lawn, check_meter, close_tap.
 - **Quick-chat wheel** — 12 phrases in MeetingScreen discussion phase (grid, not radial, for mobile tap-ability).
 - **Emote wheel** — Q on desktop / button on mobile. 4 emotes (👋🤔🚨😂) shown as bubble above player for 3s.
-- **Web Audio synthesis** — `audio.ts` module, 12 sound names, synthesized via AudioContext. Looping gurgle for active siphon (stopGurgle on all cancel paths).
+- **Web Audio synthesis** — `audio.ts` module, 30 sound names, synthesized via AudioContext. Looping gurgle for active siphon (stopGurgle on all cancel paths).
 - **Character voice lines in meeting** — 60% chance bots use character-specific lines, 40% generic fallback.
 - **Bot fake task** — Slivshchik bots enter 'fake_task' state when watched by an owner, move to nearby task and stand there.
+- **Dumpster venting** — Сливщики press E near dumpster to teleport to the other dumpster. VENT_COOLDOWN=15s. isCarryingCanister blocks vent.
+- **Shawarma speed boost** — SHAWARMA_SPEED_BOOST_MULT applied when speedBoostTimer > 0. Timer set on shawarma purchase interaction.
+- **Post-immunity CTA** — On immunity ticket use, prompt shows "В жизни тоже можно: @fuel_fuel_fuel_bot" for 5s.
+
+### Mini-game type → task mapping
+- shawarma, kvass → tap_timing
+- intercom, check_meter → sequence
+- pigeons, sweep, fix_swing, water_lawn → rapid_tap
+- window → wire_drag (§2.5 починить турникет: 3 colored wire-to-socket pairs)
+- mailbox → letter
+- dog_walk, help_bags, find_cat → dog_walk
+- flower_match → flower_match (bouquet flash-tap)
+- drunk_calm → drunk_calm (dialogue tree)
+- taxi_order → taxi_order (phone UI: order → wait → confirm)
+- close_tap → dial
 
 ### New data
 - 6 car spawns (was 4), 10 task spawns (was 5), dumpster positions, kvass stand deco.

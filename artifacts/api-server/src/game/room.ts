@@ -2,7 +2,7 @@ import type { WebSocket } from 'ws';
 import type { InputState } from './types';
 import { gs, setGs, startGameMultiplayer, createInitialState } from './state';
 import type { HumanPlayerInfo } from './state';
-import { tickGameMulti, submitVote, submitSkipDiscussion, onMiniGameTap, onMiniGameDigitTap, onMiniGameChoice, onMiniGameTaxiTap, cancelMiniGame, triggerEmote } from './logic';
+import { tickGameMulti, submitVote, submitSkipDiscussion, onMiniGameTap, onMiniGameDigitTap, onMiniGameChoice, onMiniGameTaxiTap, onMiniGameWireSource, onMiniGameWireSocket, cancelMiniGame, triggerEmote } from './logic';
 import type { LobbyPlayer } from './network-types';
 
 export interface ClientInfo {
@@ -167,6 +167,12 @@ export class GameRoom {
         break;
       case 'minigame_cancel':
         cancelMiniGame();
+        break;
+      case 'minigame_wire_source':
+        onMiniGameWireSource(payload['colorIndex'] as number);
+        break;
+      case 'minigame_wire_socket':
+        onMiniGameWireSocket(payload['socketPos'] as number);
         break;
       case 'emote':
         triggerEmote(playerId, payload['emote'] as string);

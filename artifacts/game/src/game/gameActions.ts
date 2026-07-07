@@ -14,6 +14,8 @@ import {
   onMiniGameDigitTap as _digit,
   onMiniGameChoice as _choice,
   onMiniGameTaxiTap as _taxiTap,
+  onMiniGameWireSource as _wireSource,
+  onMiniGameWireSocket as _wireSocket,
   cancelMiniGame as _cancel,
   triggerEmote as _emote,
 } from './logic';
@@ -79,6 +81,24 @@ export function onMiniGameTaxiTap(): void {
     _taxiTap();
   } else {
     _taxiTap();
+  }
+}
+
+export function onMiniGameWireSource(colorIndex: number): void {
+  if (activeNetwork) {
+    activeNetwork.sendAction('minigame_wire_source', { colorIndex });
+    _wireSource(colorIndex);
+  } else {
+    _wireSource(colorIndex);
+  }
+}
+
+export function onMiniGameWireSocket(socketPos: number): void {
+  if (activeNetwork) {
+    activeNetwork.sendAction('minigame_wire_socket', { socketPos });
+    _wireSocket(socketPos);
+  } else {
+    _wireSocket(socketPos);
   }
 }
 

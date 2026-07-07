@@ -1,6 +1,6 @@
 import type { MiniGameState, TaskDefKey } from '../game/types';
 import { TASK_DEFS } from '../data/tasks';
-import { onMiniGameTap, onMiniGameDigitTap, onMiniGameChoice, onMiniGameTaxiTap, cancelMiniGame } from '../game/gameActions';
+import { onMiniGameTap, onMiniGameDigitTap, onMiniGameChoice, onMiniGameTaxiTap, onMiniGameWireSource, onMiniGameWireSocket, cancelMiniGame } from '../game/gameActions';
 
 interface Props {
   mg: MiniGameState;
@@ -43,6 +43,7 @@ export default function TaskMiniGame({ mg }: Props) {
       {mg.type === 'flower_match' && <FlowerMatch mg={mg} />}
       {mg.type === 'drunk_calm' && <DrunkCalm mg={mg} />}
       {mg.type === 'taxi_order' && <TaxiOrder mg={mg} />}
+      {mg.type === 'wire_drag' && <WireDrag mg={mg} />}
 
       {/* Cancel */}
       <button
@@ -564,6 +565,115 @@ function TaxiOrder({ mg }: { mg: MiniGameState }) {
         >
           ✅ Сесть в машину
         </button>
+      )}
+    </div>
+  );
+}
+
+// ─── §2.5 Wire Drag (Починить турникет) ──────────────────────────────────────
+// Tap a source wire to select it, then tap the matching colored socket to connect.
+// 3 correct pairs = complete.
+
+const WIRE_COLORS = [
+  { name: 'red',   label: 'Красный', hex: '#F44336' },
+  { name: 'blue',  label: 'Синий',   hex: '#2196F3' },
+  { name: 'green', label: 'Зелёный', hex: '#4CAF50' },
+];
+
+function WireDrag({ mg }: { mg: MiniGameState }) {
+  const connected = mg.wireConnected ?? [false, false, false];
+  const sockets = mg.wireSockets ?? [0, 1, 2];
+  const dragging = mg.wireDragging ?? -1;
+  const doneCount = connected.filter(Boolean).length;
+
+  const circleStyle = (colorHex: string, active: boolean, done: boolean): React.CSSProperties => ({
+    width: 44, height: 44, borderRadius: 22,
+    background: done ? colorHex : active ? colorHex : 'rgba(255,255,255,0.08)',
+    border: `3px solid ${colorHex}`,
+    boxShadow: active ? `0 0 14px ${colorHex}` : done ? `0 0 8px ${colorHex}66` : 'none',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 18, cursor: done ? 'default' : 'pointer',
+    transition: 'all 0.2s',
+    opacity: done ? 0.6 : 1,
+  });
+
+  return (
+    <div style={{ padding: '4px 0' }}>
+      {/* Progress */}
+      <div style={{ fontSize: 12, color: '#aaa', marginBottom: 14 }}>
+        Соединено: {doneCount} / 3
+      </div>
+
+      {/* Step hint */}
+      {dragging < 0 && doneCount < 3 && (
+        <div style={{ fontSize: 11, color: '#FFD700', marginBottom: 10 }}>
+          Выбери провод слева →
+        </div>
+      )}
+      {dragging >= 0 && (
+        <div style={{ fontSize: 11, color: WIRE_COLORS[dragging].hex, marginBottom: 10 }}>
+          Подключи к розетке того же цвета →
+        </div>
+      )}
+
+      {/* Main layout: sources left, sockets right */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        {/* Sources (left) — colored wires, fixed order: red, blue, green */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
+          <div style={{ fontSize: 11, color: '#888', marginBottom: 2 }}>ПРОВОДА</div>
+          {WIRE_COLORS.map((c, idx) => (
+            <div
+              key={c.name}
+              style={circleStyle(c.hex, dragging === idx, connected[idx])}
+              onClick={() => !connected[idx] && onMiniGameWireSource(idx)}
+            >
+              {connected[idx] ? '✓' : dragging === idx ? '●' : '○'}
+            </div>
+          ))}
+        </div>
+
+        {/* Dashed connection lines indicator */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
+          {WIRE_COLORS.map((c, idx) => (
+            <div key={c.name} style={{
+              height: 3, width: '100%', borderRadius: 2,
+              background: connected[idx]
+                ? c.hex
+                : 'repeating-linear-gradient(90deg,rgba(255,255,255,0.15) 0,rgba(255,255,255,0.15) 6px,transparent 6px,transparent 12px)',
+              transition: 'background 0.3s',
+              marginTop: 20,
+            }} />
+          ))}
+        </div>
+
+        {/* Sockets (right) — shuffled positions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>
+          <div style={{ fontSize: 11, color: '#888', marginBottom: 2 }}>РОЗЕТКИ</div>
+          {sockets.map((colorIdx, socketPos) => {
+            const c = WIRE_COLORS[colorIdx];
+            const isDone = connected[colorIdx];
+            return (
+              <div
+                key={socketPos}
+                style={{
+                  ...circleStyle(c.hex, dragging >= 0 && !isDone, isDone),
+                  border: `3px dashed ${c.hex}`,
+                }}
+                onClick={() => !isDone && onMiniGameWireSocket(socketPos)}
+              >
+                {isDone ? '✓' : '?'}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Feedback */}
+      {mg.feedback === 'hit' && (
+        <div style={{ color: '#4CAF50', fontSize: 12, marginTop: 14 }}>⚡ Контакт!</div>
+      )}
+      {mg.feedback === 'miss' && (
+        <div style={{ color: '#F44336', fontSize: 12, marginTop: 14 }}>💥 Неверный цвет!</div>
       )}
     </div>
   );
