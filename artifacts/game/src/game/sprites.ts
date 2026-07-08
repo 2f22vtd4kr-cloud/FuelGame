@@ -35,17 +35,23 @@ const SPRITE_KEYS = [
 // Dimensions must match the actual generated PNGs in public/sprites/ (see
 // scripts/generate-props.mjs) — offsetY is tuned so each prop's visual base
 // stays anchored to the same world point when its native size changes.
+// v2 (Propaganda Pop courtyard redesign): dumpster/flowerbed/tree/hydrant/
+// trash_bin/bicycle_rack are now AI-illustrated art (see
+// scripts/process-ai-decor.mjs) trimmed + downsampled to these exact native
+// pixel sizes; bench/lamppost/kvass_stand/ev_charger stay procedural since
+// AI top-down generations of those came back as front-elevation views that
+// didn't read correctly from directly overhead.
 export const DECOR_SPRITE_META: Record<string, { w: number; h: number; offsetY: number }> = {
   decor_bench: { w: 48, h: 26, offsetY: 0 },
-  decor_dumpster: { w: 38, h: 38, offsetY: -1 },
-  decor_flowerbed: { w: 60, h: 42, offsetY: -1 },
-  decor_tree: { w: 52, h: 68, offsetY: -8 },
+  decor_dumpster: { w: 38, h: 40, offsetY: -1 },
+  decor_flowerbed: { w: 62, h: 62, offsetY: -2 },
+  decor_tree: { w: 70, h: 70, offsetY: -8 },
   decor_lamppost: { w: 20, h: 66, offsetY: -1 },
   decor_kvass_stand: { w: 44, h: 48, offsetY: -5 },
   decor_ev_charger: { w: 32, h: 80, offsetY: -15 },
-  decor_hydrant: { w: 22, h: 32, offsetY: -5 },
-  decor_trash_bin: { w: 24, h: 30, offsetY: -5 },
-  decor_bicycle_rack: { w: 54, h: 30, offsetY: -2 },
+  decor_hydrant: { w: 34, h: 32, offsetY: -5 },
+  decor_trash_bin: { w: 32, h: 32, offsetY: -5 },
+  decor_bicycle_rack: { w: 58, h: 58, offsetY: -4 },
 };
 
 /** Maps car `id` → sprite key, matching colours to doc §7.2 car palette. */

@@ -1,6 +1,7 @@
 import type { GameState, Player, Vec2 } from './types';
 import { ALARM_RADIUS, MAP_W, MAP_H, CROUCH_VISIBILITY_MULT, VENT_FLASH_DURATION } from './types';
 import { getSprite, CAR_SPRITE_MAP, SPRITE_SHEETS, DECOR_SPRITE_META } from './sprites';
+import { getTexturePattern } from './textures';
 import { TASK_DEFS } from '../data/tasks';
 import { DECORATIONS, ENTRANCE_POS, DUMPSTER_POSITIONS, VISION_BUILDINGS, VALVE_POSITIONS, BABUSHKA_CERBERUS_POS, BABUSHKA_NPC_POS, PLAYGROUND } from '../data/map';
 import { CHARACTERS } from '../data/characters';
@@ -516,17 +517,28 @@ function drawBabushkaNPC(ctx: CanvasRenderingContext2D, state: GameState): void 
 
 // ─── Background ───────────────────────────────────────────────────────────────
 
+/** Fills a rect with a texture pattern, falling back to a flat color if the texture isn't loaded yet. */
+function fillTexturedRect(
+  ctx: CanvasRenderingContext2D,
+  key: Parameters<typeof getTexturePattern>[1],
+  fallbackColor: string,
+  x: number, y: number, w: number, h: number,
+): void {
+  const pattern = getTexturePattern(ctx, key);
+  ctx.fillStyle = pattern ?? fallbackColor;
+  ctx.fillRect(x, y, w, h);
+}
+
 function drawBackground(ctx: CanvasRenderingContext2D): void {
   // Top sky strip
   ctx.fillStyle = '#C8D8E8';
   ctx.fillRect(0, 0, 1200, 90);
 
-  // Buildings
-  ctx.fillStyle = COLORS.building;
-  ctx.fillRect(0, 0, 1200, 90);
-  ctx.fillRect(0, 810, 1200, 90);
-  ctx.fillRect(0, 90, 90, 720);
-  ctx.fillRect(1110, 90, 90, 720);
+  // Buildings — courtyard apartment rooftop texture
+  fillTexturedRect(ctx, 'roof', COLORS.building, 0, 0, 1200, 90);
+  fillTexturedRect(ctx, 'roof', COLORS.building, 0, 810, 1200, 90);
+  fillTexturedRect(ctx, 'roof', COLORS.building, 0, 90, 90, 720);
+  fillTexturedRect(ctx, 'roof', COLORS.building, 1110, 90, 90, 720);
 
   // Building edges/lines
   ctx.strokeStyle = COLORS.buildingEdge;
@@ -543,15 +555,13 @@ function drawBackground(ctx: CanvasRenderingContext2D): void {
   ctx.fillRect(460, 815, 280, 80);
 
   // Grass/garden
-  ctx.fillStyle = '#5AAD5A';
-  ctx.fillRect(90, 470, 1020, 340);
+  fillTexturedRect(ctx, 'grass', '#5AAD5A', 90, 470, 1020, 340);
 
   // Parking/asphalt
-  ctx.fillStyle = COLORS.parking;
-  ctx.fillRect(90, 90, 1020, 380);
+  fillTexturedRect(ctx, 'asphalt', COLORS.parking, 90, 90, 1020, 380);
 
   // Parking spots
-  ctx.strokeStyle = '#777';
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
   ctx.lineWidth = 1;
   for (let x = 140; x < 1100; x += 130) {
     ctx.strokeRect(x, 100, 110, 180);
@@ -559,29 +569,17 @@ function drawBackground(ctx: CanvasRenderingContext2D): void {
   }
 
   // Garden path
-  ctx.fillStyle = '#7A6A5A';
-  ctx.fillRect(560, 470, 80, 340);
-
-  // Windows on buildings (decorative)
-  ctx.fillStyle = '#87CEEB';
-  for (let bx = 50; bx < 1180; bx += 90) {
-    for (let by = 10; by < 85; by += 30) {
-      if (bx > 90 && bx < 1110) continue;
-      ctx.fillRect(bx, by, 24, 18);
-    }
-  }
+  fillTexturedRect(ctx, 'path', '#7A6A5A', 560, 470, 80, 340);
 }
 
 function drawParkingLot(ctx: CanvasRenderingContext2D): void {
   // Path from garden to entrance
-  ctx.fillStyle = '#6A5A4A';
-  ctx.fillRect(560, 780, 80, 30);
+  fillTexturedRect(ctx, 'path', '#6A5A4A', 560, 780, 80, 30);
 
-  // §01.2 Playground zone — sand-coloured sub-area with faded label
-  ctx.fillStyle = '#C8A96E';
-  ctx.globalAlpha = 0.25;
+  // §01.2 Playground zone — mustard rubber-flooring sub-area with faded label
+  const pattern = getTexturePattern(ctx, 'playground');
+  ctx.fillStyle = pattern ?? '#C8A96E';
   ctx.fillRect(PLAYGROUND.x, PLAYGROUND.y, PLAYGROUND.w, PLAYGROUND.h);
-  ctx.globalAlpha = 1;
   // Dashed border
   ctx.strokeStyle = '#8B6914';
   ctx.lineWidth = 1;

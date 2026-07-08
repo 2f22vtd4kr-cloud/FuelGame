@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { GameState } from './game/types';
-import { gs, resetGameState } from './game/state';
+import { gs, resetGameState, startGame } from './game/state';
 import { CHARACTERS } from './data/characters';
 import { setActiveNetwork } from './game/gameActions';
 import { skipBriefing } from './game/logic';
@@ -30,6 +30,15 @@ export default function App() {
   const [appPhase, setAppPhase] = useState<AppPhase>(() => {
     // Deep-linked via Telegram invite → go straight to multiplayer
     if (getTelegramStartRoomCode()) return 'multiplayer';
+    // TEMP-QA: ?qa_autostart=1 jumps straight into a solo match for visual
+    // QA screenshots. Remove before shipping.
+    if (new URLSearchParams(window.location.search).has('qa_autostart')) {
+      gs.selectedCharacter = 'denis';
+      gs.botDifficulty = 'medium';
+      startGame('denis', 6, 2, false);
+      skipBriefing();
+      return 'play';
+    }
     return 'lobby';
   });
   const [snapshot, setSnapshot] = useState<GameState>(() => ({

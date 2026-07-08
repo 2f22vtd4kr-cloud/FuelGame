@@ -88,10 +88,11 @@
   letter-spacing: 0.08em; color: white;
 }
 
-/* ── Top strip ────────────────────────────────────────────────────────── */
+/* ── Top strip — parchment courtyard-notice look ─────────────────────────── */
 .pp-topstrip {
-  background: var(--pp-black);
-  border-bottom: 3px solid var(--pp-red);
+  background: var(--pp-cream);
+  border-bottom: 3px solid var(--pp-black);
+  box-shadow: 0 3px 0 rgba(204,43,29,0.6);
   padding: 6px 10px;
   display: flex; align-items: center; gap: 8px;
 }
@@ -99,8 +100,8 @@
 /* ── Unity bar ────────────────────────────────────────────────────────── */
 .pp-unity-track {
   height: 8px;
-  background: rgba(255,255,255,0.12);
-  border: 1.5px solid rgba(255,255,255,0.25);
+  background: rgba(26,26,26,0.1);
+  border: 1.5px solid rgba(26,26,26,0.35);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -127,10 +128,10 @@
   padding: 3px 8px; border-radius: 2px;
 }
 
-/* ── News ticker ──────────────────────────────────────────────────────── */
+/* ── News ticker — parchment strip to match top strip ────────────────────── */
 .pp-ticker-bar {
-  background: var(--pp-black);
-  border-top: 3px solid var(--pp-red);
+  background: var(--pp-cream);
+  border-top: 3px solid var(--pp-black);
   padding: 4px 0;
   display: flex; align-items: center; overflow: hidden;
 }
@@ -147,8 +148,8 @@
 .pp-ticker-text {
   display: inline-block;
   white-space: nowrap;
-  color: var(--pp-cream);
-  font-size: 10px; font-weight: 600;
+  color: var(--pp-black);
+  font-size: 10px; font-weight: 700;
   animation: pp-ticker 18s linear infinite;
   padding-left: 100%;
 }
@@ -187,24 +188,25 @@
   border-radius: 2px;
 }
 
-/* ── Corner action buttons ─────────────────────────────────────────────── */
+/* ── Corner action buttons — cream stamp-press, matches Lobby's .pp-btn ── */
 .pp-corner-btn {
   width: 36px; height: 36px;
-  background: var(--pp-black);
-  border: 2px solid rgba(255,255,255,0.2);
-  box-shadow: 3px 3px 0 rgba(0,0,0,0.6);
-  color: var(--pp-cream);
+  background: var(--pp-cream);
+  border: 2px solid var(--pp-black);
+  box-shadow: 3px 3px 0 var(--pp-black);
+  color: var(--pp-black);
   font-size: 15px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   border-radius: 2px;
   transition: background 0.12s, box-shadow 0.08s, transform 0.08s;
 }
 .pp-corner-btn:active {
-  box-shadow: 1px 1px 0 rgba(0,0,0,0.6);
+  box-shadow: 1px 1px 0 var(--pp-black);
   transform: translate(2px, 2px);
 }
 .pp-corner-btn.active {
   background: var(--pp-red);
+  color: white;
   border-color: var(--pp-black);
   box-shadow: 3px 3px 0 var(--pp-black);
 }
@@ -240,10 +242,10 @@
 }
 .pp-action-btn {
   width: 40px; height: 40px;
-  background: var(--pp-black);
-  border: 2px solid rgba(255,255,255,0.2);
+  background: var(--pp-cream);
+  border: 2px solid var(--pp-black);
   box-shadow: 3px 3px 0 rgba(0,0,0,0.6);
-  color: var(--pp-cream);
+  color: var(--pp-black);
   font-size: 17px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   border-radius: 2px;
@@ -259,15 +261,15 @@
   box-shadow: 3px 3px 0 var(--pp-black);
 }
 .pp-action-btn.cooldown {
-  background: rgba(100,20,20,0.7);
+  background: rgba(180,150,110,0.7);
   box-shadow: 2px 2px 0 var(--pp-black);
 }
 
 /* ── Emote grid ─────────────────────────────────────────────────────────── */
 .pp-emote-btn {
   width: 44px; height: 44px;
-  background: var(--pp-black);
-  border: 2px solid rgba(255,255,255,0.22);
+  background: var(--pp-cream);
+  border: 2px solid var(--pp-black);
   box-shadow: 3px 3px 0 rgba(0,0,0,0.8);
   border-radius: 2px; font-size: 22px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -280,10 +282,10 @@
 
 /* ── Prompt pill ─────────────────────────────────────────────────────────── */
 .pp-prompt {
-  background: var(--pp-black);
-  border: 2px solid var(--pp-mustard);
+  background: var(--pp-cream);
+  border: 2px solid var(--pp-black);
   box-shadow: 3px 3px 0 var(--pp-black);
-  color: var(--pp-cream);
+  color: var(--pp-black);
   padding: 5px 14px;
   font-size: 12px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.04em;

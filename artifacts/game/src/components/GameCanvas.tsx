@@ -8,6 +8,7 @@ import { renderGame } from '../game/renderer';
 import { audio } from '../game/audio';
 import { captureMoment, startFrameCapture, stopFrameCapture } from '../game/replayBuffer';
 import { loadSprites } from '../game/sprites';
+import { loadTextures } from '../game/textures';
 import type { GameNetwork } from '../game/network';
 import VirtualJoystick from './VirtualJoystick';
 import { touchInput, setTouchInteract, toggleTouchSprint, resetTouchInput } from '../game/touchInput';
@@ -41,6 +42,8 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
 
   // ── §7.3 Pre-load character and car sprites ────────────────────────────────
   useEffect(() => { loadSprites(); }, []);
+  // ── Pre-load courtyard ground textures (Propaganda Pop redesign) ───────────
+  useEffect(() => { loadTextures(); }, []);
 
   // ── Keyboard handler ───────────────────────────────────────────────────────
   useEffect(() => {

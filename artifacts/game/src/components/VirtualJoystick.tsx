@@ -138,8 +138,9 @@ export default function VirtualJoystick({ onMove, onInteract, onSprintToggle, on
           left: JOYSTICK_LEFT,
           bottom: JOYSTICK_BOTTOM,
           borderRadius: '50%',
-          background: 'rgba(255,255,255,0.12)',
-          border: '2px solid rgba(255,255,255,0.3)',
+          background: 'rgba(244,235,208,0.85)',
+          border: '3px solid rgba(26,26,26,0.85)',
+          boxShadow: '3px 3px 0 rgba(0,0,0,0.5)',
           opacity: 0.4,
           pointerEvents: 'none',
           zIndex: 21,
@@ -155,8 +156,8 @@ export default function VirtualJoystick({ onMove, onInteract, onSprintToggle, on
             width: KNOB_RADIUS * 2,
             height: KNOB_RADIUS * 2,
             borderRadius: '50%',
-            background: 'rgba(255,255,255,0.5)',
-            border: '2px solid rgba(255,255,255,0.8)',
+            background: '#cc2b1d',
+            border: '2px solid #1a1a1a',
             transform: 'translate(-50%, -50%)',
             transition: 'transform 0.05s',
           }}
@@ -212,8 +213,8 @@ export default function VirtualJoystick({ onMove, onInteract, onSprintToggle, on
           width: 64,
           height: 64,
           borderRadius: '50%',
-          background: 'rgba(255,200,50,0.85)',
-          border: '3px solid rgba(255,220,80,0.9)',
+          background: '#e5a50a',
+          border: '3px solid #1a1a1a',
           fontSize: 22,
           fontWeight: 'bold',
           color: '#1A1A1A',
@@ -224,7 +225,7 @@ export default function VirtualJoystick({ onMove, onInteract, onSprintToggle, on
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          boxShadow: '3px 3px 0 rgba(0,0,0,0.6)',
         }}
       >
         E

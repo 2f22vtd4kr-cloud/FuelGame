@@ -396,10 +396,10 @@ export default function HUD({ state }: HUDProps) {
             marginBottom: 3,
           }}>
             <span style={{ fontSize: 8, fontWeight: 800, textTransform: 'uppercase',
-              letterSpacing: '0.1em', color: 'rgba(244,235,208,0.55)' }}>
+              letterSpacing: '0.1em', color: 'rgba(26,26,26,0.6)' }}>
               🤝 {t('hud_unity', state.language)}
             </span>
-            <span style={{ fontSize: 8, fontWeight: 800, color: '#e5a50a' }}>
+            <span style={{ fontSize: 8, fontWeight: 800, color: '#cc2b1d' }}>
               {Math.round(state.unityMeter)}%
             </span>
           </div>
@@ -418,7 +418,7 @@ export default function HUD({ state }: HUDProps) {
           </div>
           <div style={{
             fontSize: 11, fontWeight: 900, letterSpacing: '0.04em',
-            color: timerUrgent ? '#FF5252' : '#f4ebd0',
+            color: timerUrgent ? '#cc2b1d' : '#1a1a1a',
             fontVariantNumeric: 'tabular-nums',
           }}>
             ⏱ {mins}:{secs}
@@ -445,15 +445,15 @@ export default function HUD({ state }: HUDProps) {
             onClick={() => setShowPlayerList(v => !v)}
             style={{
               background: 'transparent', border: 'none',
-              fontSize: 10, fontWeight: 800, color: 'rgba(244,235,208,0.6)',
+              fontSize: 10, fontWeight: 800, color: 'rgba(26,26,26,0.65)',
               cursor: 'pointer', letterSpacing: '0.04em',
               padding: '0 2px',
               display: 'flex', alignItems: 'center', gap: 5,
             }}
           >
             🏠 {aliveKhozaeva}
-            {isSlivshchik && <span style={{ color: '#FF5252' }}>🪣 {aliveSlivshchiki}</span>}
-            {!isSlivshchik && <span style={{ opacity: 0.4 }}>/{state.players.length}</span>}
+            {isSlivshchik && <span style={{ color: '#cc2b1d' }}>🪣 {aliveSlivshchiki}</span>}
+            {!isSlivshchik && <span style={{ opacity: 0.5 }}>/{state.players.length}</span>}
           </button>
 
           {/* Fuel detail dropdown */}
