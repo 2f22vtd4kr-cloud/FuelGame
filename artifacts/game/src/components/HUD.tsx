@@ -12,6 +12,7 @@ import { audio } from '../game/audio';
 import { loadProfile, saveProfile } from '../game/profile';
 import TaskMiniGame from './TaskMiniGame';
 import { t } from '../i18n/strings';
+import { setTouchCrouch, toggleTouchSprint } from '../game/touchInput';
 
 function saveAccessibilityToProfile(): void {
   const profile = loadProfile();
@@ -273,11 +274,17 @@ const SABOTAGE_KEYS: SabotageKey[] = ['alarm_chaos', 'chat_offline', 'babushka_c
 
 export default function HUD({ state }: HUDProps) {
   const [showSabotageMenu, setShowSabotageMenu] = useState(false);
-  const [showEmoteWheel, setShowEmoteWheel]     = useState(false);
   const [showObjective, setShowObjective]       = useState(false);
   const [showSettings, setShowSettings]         = useState(false);
   const [showPlayerList, setShowPlayerList]     = useState(false);
   const [showFuelDetail, setShowFuelDetail]     = useState(false);
+  // Emote wheel lives on gs (not local state) since it can also be opened
+  // from the "Q" key or the mobile swipe-up gesture inside <GameCanvas>.
+  const showEmoteWheel = state.emoteWheelOpen;
+  const setShowEmoteWheel = (v: boolean | ((prev: boolean) => boolean)) => {
+    gs.emoteWheelOpen = typeof v === 'function' ? v(gs.emoteWheelOpen) : v;
+  };
+  const [isCrouchHeld, setIsCrouchHeld] = useState(false);
 
   const localPlayer = state.players.find(p => p.id === state.localPlayerId);
   if (!localPlayer) return null;
@@ -535,82 +542,19 @@ export default function HUD({ state }: HUDProps) {
       )}
 
       {/* ════════════════════════════════════════════════════════════════════
-          RIGHT COLUMN — stacked action buttons, bottom-right
+          RIGHT COLUMN — one compact stack of same-size action buttons.
+          Consolidates what used to be two separate button clusters (this
+          HUD's own row plus a duplicate sprint/crouch/emote row rendered by
+          <GameCanvas>) into a single 40px-button column so it stops eating
+          into the play area.
           ════════════════════════════════════════════════════════════════════ */}
-      <div style={{
-        position: 'absolute', bottom: 30, right: 10,
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8,
-        pointerEvents: 'all',
-      }}>
-
-        {/* ── "Что делать?" button ── */}
-        {localPlayer.isAlive && (
-          <div style={{ position: 'relative' }}>
-            <button
-              className={`pp-corner-btn${showObjective ? ' active' : ''}`}
-              onClick={() => setShowObjective(o => !o)}
-              title="Что делать?"
-              style={{ width: 'auto', padding: '0 8px', fontSize: 9, fontWeight: 800,
-                textTransform: 'uppercase', letterSpacing: '0.08em', height: 32, gap: 4, display: 'flex', alignItems: 'center' }}
-            >
-              ❓ ЧТО ДЕЛАТЬ
-            </button>
-            {showObjective && (
-              <div className="pp-dropdown" style={{ position: 'absolute', bottom: 36, right: 0, width: 220, zIndex: 50 }}>
-                {isSlivshchik ? (
-                  <>
-                    <div style={{ color: '#cc2b1d', fontWeight: 900, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>★ Ты — Сливщик</div>
-                    {['Подойди к машине [E] → сливай бензин', 'Подними канистру после слива', 'Выброси канистру у мусорки', 'Делай вид, что выполняешь задачи', 'Вызывай диверсии через кнопку 🔧', 'Устраивай засаду в одиночестве'].map((s, i) => (
-                      <div key={i} style={{ fontSize: 10, color: '#f4ebd0', opacity: 0.75, marginBottom: 3 }}>• {s}</div>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    <div style={{ color: '#e5a50a', fontWeight: 900, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>★ Ты — Хозяин</div>
-                    {['Выполняй задачи → метр единства', 'Следи за уровнем бензина в машинах', 'У арки [E] → вызвать сходку', 'На сходке голосуй за подозреваемых', 'Выгони сливщиков или доведи метр до 100%'].map((s, i) => (
-                      <div key={i} style={{ fontSize: 10, color: '#f4ebd0', opacity: 0.75, marginBottom: 3 }}>• {s}</div>
-                    ))}
-                  </>
-                )}
-                <div style={{ marginTop: 6, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 5, fontSize: 8, color: 'rgba(244,235,208,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Нажми снова чтобы закрыть
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Emote wheel ── */}
-        {localPlayer.isAlive && (
-          <div style={{ position: 'relative' }}>
-            {showEmoteWheel && (
-              <div style={{
-                position: 'absolute', bottom: 48, right: 0,
-                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5,
-              }}>
-                {PLAY_EMOTES.map((emote, i) => (
-                  <button key={i} className="pp-emote-btn"
-                    onClick={() => { triggerEmote(gs.localPlayerId, emote); setShowEmoteWheel(false); }}
-                  >{emote}</button>
-                ))}
-              </div>
-            )}
-            <button
-              className={`pp-corner-btn${showEmoteWheel ? ' active' : ''}`}
-              onClick={() => setShowEmoteWheel(v => !v)}
-              title="Эмоция"
-              style={{ width: 40, height: 40, fontSize: 18, borderRadius: 2 }}
-            >
-              😊
-            </button>
-          </div>
-        )}
+      <div className="pp-action-stack">
 
         {/* ── Sabotage (slivshchik only) ── */}
         {isSlivshchik && localPlayer.isAlive && (
           <div style={{ position: 'relative' }}>
             {showSabotageMenu && (
-              <div className="pp-dropdown" style={{ position: 'absolute', bottom: 52, right: 0, minWidth: 220, zIndex: 55 }}>
+              <div className="pp-dropdown" style={{ position: 'absolute', bottom: 48, right: 0, minWidth: 220, zIndex: 55 }}>
                 <div style={{ fontSize: 10, color: '#cc2b1d', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
                   ★ ДИВЕРСИИ
                 </div>
@@ -652,9 +596,10 @@ export default function HUD({ state }: HUDProps) {
               </div>
             )}
             <button
-              className={`pp-sabotage-btn${sabotageCooldown > 0 ? ' cooldown' : ''}`}
+              className={`pp-action-btn${sabotageCooldown > 0 ? ' cooldown' : ''}`}
               onClick={() => setShowSabotageMenu(v => !v)}
-              style={{ position: 'relative' }}
+              title="Диверсии"
+              style={{ position: 'relative', background: 'var(--pp-red)' }}
             >
               🔧
               {sabotageCooldown > 0 && (
@@ -666,6 +611,90 @@ export default function HUD({ state }: HUDProps) {
                 </div>
               )}
             </button>
+          </div>
+        )}
+
+        {/* ── Sprint toggle ── */}
+        {localPlayer.isAlive && (
+          <button
+            className={`pp-action-btn${localPlayer.isSprinting ? ' active' : ''}`}
+            onClick={() => { audio.init(); toggleTouchSprint(); }}
+            title="Спринт (или двойное нажатие E)"
+          >
+            🏃
+          </button>
+        )}
+
+        {/* ── Crouch (hold) ── */}
+        {localPlayer.isAlive && (
+          <button
+            className={`pp-action-btn${isCrouchHeld ? ' active' : ''}`}
+            onPointerDown={() => { audio.init(); setIsCrouchHeld(true); setTouchCrouch(true); }}
+            onPointerUp={() => { setIsCrouchHeld(false); setTouchCrouch(false); }}
+            onPointerLeave={() => { setIsCrouchHeld(false); setTouchCrouch(false); }}
+            title="Пригнуться (удерживать)"
+          >
+            🦆
+          </button>
+        )}
+
+        {/* ── Emote wheel ── */}
+        {localPlayer.isAlive && (
+          <div style={{ position: 'relative' }}>
+            {showEmoteWheel && (
+              <div style={{
+                position: 'absolute', bottom: 48, right: 0,
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5,
+              }}>
+                {PLAY_EMOTES.map((emote, i) => (
+                  <button key={i} className="pp-emote-btn"
+                    onClick={() => { triggerEmote(gs.localPlayerId, emote); setShowEmoteWheel(false); }}
+                  >{emote}</button>
+                ))}
+              </div>
+            )}
+            <button
+              className={`pp-action-btn${showEmoteWheel ? ' active' : ''}`}
+              onClick={() => setShowEmoteWheel(v => !v)}
+              title="Эмоция (Q)"
+            >
+              😊
+            </button>
+          </div>
+        )}
+
+        {/* ── "Что делать?" button ── */}
+        {localPlayer.isAlive && (
+          <div style={{ position: 'relative' }}>
+            <button
+              className={`pp-action-btn${showObjective ? ' active' : ''}`}
+              onClick={() => setShowObjective(o => !o)}
+              title="Что делать?"
+            >
+              ❓
+            </button>
+            {showObjective && (
+              <div className="pp-dropdown" style={{ position: 'absolute', bottom: 48, right: 0, width: 220, zIndex: 50 }}>
+                {isSlivshchik ? (
+                  <>
+                    <div style={{ color: '#cc2b1d', fontWeight: 900, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>★ Ты — Сливщик</div>
+                    {['Подойди к машине [E] → сливай бензин', 'Подними канистру после слива', 'Выброси канистру у мусорки', 'Делай вид, что выполняешь задачи', 'Вызывай диверсии через кнопку 🔧', 'Устраивай засаду в одиночестве'].map((s, i) => (
+                      <div key={i} style={{ fontSize: 10, color: '#f4ebd0', opacity: 0.75, marginBottom: 3 }}>• {s}</div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <div style={{ color: '#e5a50a', fontWeight: 900, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>★ Ты — Хозяин</div>
+                    {['Выполняй задачи → метр единства', 'Следи за уровнем бензина в машинах', 'У арки [E] → вызвать сходку', 'На сходке голосуй за подозреваемых', 'Выгони сливщиков или доведи метр до 100%'].map((s, i) => (
+                      <div key={i} style={{ fontSize: 10, color: '#f4ebd0', opacity: 0.75, marginBottom: 3 }}>• {s}</div>
+                    ))}
+                  </>
+                )}
+                <div style={{ marginTop: 6, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 5, fontSize: 8, color: 'rgba(244,235,208,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Нажми снова чтобы закрыть
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -777,10 +806,13 @@ export default function HUD({ state }: HUDProps) {
         </div>
       )}
 
-      {/* ── §12.4 Tutorial overlay — propaganda poster style ── */}
+      {/* ── §12.4 Tutorial overlay — propaganda poster style.
+          Anchored below the top strip (not above the joystick/action
+          buttons) so it never overlaps mobile controls and its Skip
+          button stays reachable regardless of screen size. ── */}
       {state.tutorialStep >= 1 && state.tutorialStep <= 3 && state.phase === 'play' && (
         <div style={{
-          position: 'fixed', bottom: 175, left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', top: 74, left: '50%', transform: 'translateX(-50%)',
           pointerEvents: 'all', zIndex: 200,
         }}>
           <div className="pp-tutorial">

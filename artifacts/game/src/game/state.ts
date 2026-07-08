@@ -118,6 +118,7 @@ export function createInitialState(): GameState {
     backstabMoment: null,
     backstabMomentAcked: false,
     isDailySeedGame: false,
+    emoteWheelOpen: false,
   };
 }
 

@@ -229,6 +229,40 @@
   box-shadow: 2px 2px 0 var(--pp-black);
 }
 
+/* ── Consolidated action button stack (bottom-right) ───────────────────────
+   Replaces two previously-separate button clusters (this HUD's own row,
+   plus a duplicate sprint/crouch/emote row that used to live on the
+   GameCanvas) with one compact column of same-sized buttons. */
+.pp-action-stack {
+  position: absolute; bottom: 30px; right: 10px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  pointer-events: all;
+}
+.pp-action-btn {
+  width: 40px; height: 40px;
+  background: var(--pp-black);
+  border: 2px solid rgba(255,255,255,0.2);
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.6);
+  color: var(--pp-cream);
+  font-size: 17px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 2px;
+  transition: background 0.12s, box-shadow 0.08s, transform 0.08s;
+}
+.pp-action-btn:active {
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.6);
+  transform: translate(2px, 2px);
+}
+.pp-action-btn.active {
+  background: var(--pp-red);
+  border-color: var(--pp-black);
+  box-shadow: 3px 3px 0 var(--pp-black);
+}
+.pp-action-btn.cooldown {
+  background: rgba(100,20,20,0.7);
+  box-shadow: 2px 2px 0 var(--pp-black);
+}
+
 /* ── Emote grid ─────────────────────────────────────────────────────────── */
 .pp-emote-btn {
   width: 44px; height: 44px;

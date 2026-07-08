@@ -1,25 +1,22 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import type { InputState } from '../game/types';
 import { SIPHON_CLICK_RADIUS, MAP_W, MAP_H, SPRINT_SPEED_MULT, CROUCH_SPEED_MULT } from '../game/types';
 import { gs } from '../game/state';
 import { dist } from '../data/map';
 import { tickGame, checkBackstabMoment } from '../game/logic';
-import { triggerEmote } from '../game/gameActions';
 import { renderGame } from '../game/renderer';
 import { audio } from '../game/audio';
 import { captureMoment, startFrameCapture, stopFrameCapture } from '../game/replayBuffer';
 import { loadSprites } from '../game/sprites';
 import type { GameNetwork } from '../game/network';
 import VirtualJoystick from './VirtualJoystick';
+import { touchInput, setTouchInteract, toggleTouchSprint, resetTouchInput } from '../game/touchInput';
 
 interface GameCanvasProps {
   onStateSnapshot: (snap: typeof gs) => void;
   network?: GameNetwork | null;
   myPlayerId?: string | null;
 }
-
-const EMOTES = ['👋', '🤔', '🚨', '😂'];
-const EMOTE_LABELS = ['Привет!', 'Подозрительно...', 'Тревога!', 'Хаха!'];
 
 export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -36,16 +33,11 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
     emoteIndex: null,
   });
 
-  const touchInteractRef = useRef(false);
-  const touchSprintRef = useRef(false);   // mobile toggle state
-  const touchCrouchRef = useRef(false);
   const sprintToggleRef = useRef(false);  // keyboard sprint toggle state
   const prevBackstabMomentRef = useRef<string | null>(null); // §9.2 frame capture
   const prevPhaseRef = useRef<string>('');                   // §9.2 phase tracking for frame buffer
   // §02.6 multiplayer: track previous siphon phases to detect 0→1 transitions
   const prevCarSiphonPhaseRef = useRef<Record<string, number>>({});
-
-  const [showEmoteWheel, setShowEmoteWheel] = useState(false);
 
   // ── §7.3 Pre-load character and car sprites ────────────────────────────────
   useEffect(() => { loadSprites(); }, []);
@@ -64,7 +56,7 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
       }
       keysRef.current.add(e.key);
       if (e.key === 'q' || e.key === 'Q') {
-        setShowEmoteWheel(v => !v);
+        gs.emoteWheelOpen = !gs.emoteWheelOpen;
       }
     }
     function onKeyUp(e: KeyboardEvent) {
@@ -83,6 +75,13 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d', { alpha: false })!;
+
+    // touchInput is a module-level singleton (shared with the HUD's action
+    // buttons), not component state, so it must be explicitly cleared at
+    // mount/unmount — otherwise a toggled sprint or a crouch button released
+    // outside this component (e.g. HUD unmounting mid-press on a phase
+    // change) would leak into the next match.
+    resetTouchInput();
 
     function resize() {
       canvas!.width = canvas!.clientWidth;
@@ -113,9 +112,9 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
       if (kbDx !== 0 || kbDy !== 0) { inp.dx = kbDx; inp.dy = kbDy; }
       else { inp.dx = joy.dx; inp.dy = joy.dy; }
 
-      inp.interact = keys.has('e') || keys.has('E') || keys.has(' ') || touchInteractRef.current;
-      inp.sprint = sprintToggleRef.current || touchSprintRef.current;
-      inp.crouch = keys.has('Control') || touchCrouchRef.current;
+      inp.interact = keys.has('e') || keys.has('E') || keys.has(' ') || touchInput.interact;
+      inp.sprint = sprintToggleRef.current || touchInput.sprint;
+      inp.crouch = keys.has('Control') || touchInput.crouch;
 
       if (network) {
         // ── Multiplayer mode ──────────────────────────────────────────────
@@ -213,6 +212,7 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
     return () => {
       cancelAnimationFrame(rafRef.current);
       ro.disconnect();
+      resetTouchInput();
     };
   }, [onStateSnapshot, network, myPlayerId]);
 
@@ -224,24 +224,11 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
 
   const onInteract = useCallback((active: boolean) => {
     audio.init();
-    touchInteractRef.current = active;
+    setTouchInteract(active);
   }, []);
 
   const onSprint = useCallback(() => {
-    touchSprintRef.current = !touchSprintRef.current;
-  }, []);
-
-  const onCrouch = useCallback((active: boolean) => {
-    touchCrouchRef.current = active;
-  }, []);
-
-  const onEmote = useCallback((idx: number) => {
-    const player = gs.players.find(p => p.id === gs.localPlayerId);
-    if (player) {
-      triggerEmote(player.id, EMOTES[idx]);
-      audio.play('ui_click');
-    }
-    setShowEmoteWheel(false);
+    toggleTouchSprint();
   }, []);
 
   const handleCanvasClick = useCallback(() => {
@@ -260,47 +247,9 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
         onMove={onJoystickMove}
         onInteract={onInteract}
         onSprintToggle={onSprint}
-        onEmoteOpen={() => setShowEmoteWheel(v => !v)}
+        onEmoteOpen={() => { gs.emoteWheelOpen = !gs.emoteWheelOpen; }}
         visible={true}
       />
-
-      {/* Mobile action buttons — z-index 22 keeps them above the swipe overlay (z:19) and E button (z:21) */}
-      <div style={{
-        position: 'absolute', right: 16, bottom: 110,
-        display: 'flex', flexDirection: 'column', gap: 8,
-        pointerEvents: 'all', zIndex: 22,
-      }}>
-        <button onClick={onSprint} style={mobileBtn('#FFD700')}>🏃</button>
-        <button onPointerDown={() => onCrouch(true)} onPointerUp={() => onCrouch(false)} onPointerLeave={() => onCrouch(false)} style={mobileBtn('#90CAF9')}>🦆</button>
-        <button onPointerDown={() => setShowEmoteWheel(v => !v)} style={mobileBtn('#FF8A65')}>😂</button>
-      </div>
-
-      {/* Emote wheel */}
-      {showEmoteWheel && (
-        <div style={{
-          position: 'absolute', right: 80, bottom: 110,
-          background: 'rgba(20,20,32,0.95)', borderRadius: 12,
-          padding: 12, display: 'grid', gridTemplateColumns: '1fr 1fr',
-          gap: 8, zIndex: 50, boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
-          border: '1px solid rgba(255,255,255,0.1)',
-        }}>
-          <div style={{ gridColumn: '1 / -1', color: '#aaa', fontSize: 10, textAlign: 'center', marginBottom: 4 }}>Q — ЭМОЦИИ</div>
-          {EMOTES.map((e, i) => (
-            <button key={i} onClick={() => onEmote(i)} style={{
-              width: 60, height: 52, borderRadius: 8,
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: '#fff', cursor: 'pointer',
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              gap: 2, fontSize: 20,
-            }}>
-              <span>{e}</span>
-              <span style={{ fontSize: 7, color: '#aaa' }}>{EMOTE_LABELS[i]}</span>
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Desktop controls hint */}
       <div style={{
@@ -314,22 +263,4 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
       </div>
     </div>
   );
-}
-
-function mobileBtn(color: string): React.CSSProperties {
-  return {
-    width: 52, height: 52, borderRadius: '50%',
-    background: `rgba(${hexToRgb(color)},0.85)`,
-    border: `2px solid ${color}`,
-    fontSize: 22, cursor: 'pointer',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-    userSelect: 'none',
-  };
-}
-
-function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r},${g},${b}`;
 }

@@ -17,7 +17,26 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    runtimeErrorOverlay(),
+    // Suppress the "ResizeObserver loop limit exceeded" browser warning.
+    // GameCanvas observes its own element to keep canvas resolution in sync
+    // with layout; on some browsers (notably mobile Safari, used by the iOS
+    // Replit app) this well-known benign timing warning surfaces as a
+    // non-Error `error` event. The overlay's client script always turns any
+    // non-Error `error`/`unhandledrejection` value into the literal message
+    // "(unknown runtime error)" (see @replit/vite-plugin-runtime-error-modal's
+    // sendError()), so that exact string is what we actually see for this
+    // case and is what we filter on. Filtering here (server-side, before the
+    // overlay is shown) is more reliable than a client-side error listener,
+    // since the overlay's own listener is injected before app code runs.
+    // Note: the plugin checks this filter before logging, so a filtered
+    // error produces no server-console trace either. If a *different* bug
+    // starts throwing non-Error values (e.g. a DOMException from canvas
+    // operations, which per spec is not `instanceof Error`), it would also
+    // be silently skipped here with no overlay and no log line — revisit
+    // this filter if play ever "feels" broken without any visible error.
+    runtimeErrorOverlay({
+      filter: (error) => error.message !== '(unknown runtime error)',
+    }),
     ...(process.env.NODE_ENV !== 'production' &&
     process.env.REPL_ID !== undefined
       ? [
@@ -58,8 +77,9 @@ export default defineConfig({
       strict: true,
     },
     proxy: {
+      // api-server listens on 3001 (see its workflow: `PORT=3001 ...`).
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3001',
         changeOrigin: true,
         ws: true,
       },

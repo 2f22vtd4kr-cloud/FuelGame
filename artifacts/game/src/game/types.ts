@@ -446,6 +446,9 @@ export interface GameState {
   backstabMomentAcked: boolean; // true once player has saved/dismissed
   // §3.5 Daily seed SP mode — true when game was started with the daily seed
   isDailySeedGame: boolean;
+  // Shared emote-wheel visibility — opened from the HUD button, the "Q" key,
+  // or the mobile swipe-up gesture, so it lives on gs instead of local state.
+  emoteWheelOpen: boolean;
 }
 
 // ─── Input ────────────────────────────────────────────────────────────────────
