@@ -4,5 +4,8 @@ export const modules: ModuleMap = {
   "./components/mockups/main-menu/Arcade.tsx": () => import("../components/mockups/main-menu/Arcade.tsx"),
   "./components/mockups/main-menu/Current.tsx": () => import("../components/mockups/main-menu/Current.tsx"),
   "./components/mockups/main-menu/Noir.tsx": () => import("../components/mockups/main-menu/Noir.tsx"),
-  "./components/mockups/main-menu/Propaganda.tsx": () => import("../components/mockups/main-menu/Propaganda.tsx")
+  "./components/mockups/main-menu/Propaganda.tsx": () => import("../components/mockups/main-menu/Propaganda.tsx"),
+  "./components/mockups/main-menu/PropagandaBroadsheet.tsx": () => import("../components/mockups/main-menu/PropagandaBroadsheet.tsx"),
+  "./components/mockups/main-menu/PropagandaCinema.tsx": () => import("../components/mockups/main-menu/PropagandaCinema.tsx"),
+  "./components/mockups/main-menu/PropagandaConstructivist.tsx": () => import("../components/mockups/main-menu/PropagandaConstructivist.tsx")
 };

@@ -24,6 +24,10 @@ args = "artifacts/game: web"
 task = "workflow.run"
 args = "artifacts/api-server: dev"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "artifacts/mockup-sandbox: Component Preview Server"
+
 [[workflows.workflow]]
 name = "artifacts/game: web"
 author = "agent"
@@ -47,6 +51,19 @@ waitForPort = 3001
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow]]
+name = "artifacts/mockup-sandbox: Component Preview Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=5173 BASE_PATH=/__mockup/ pnpm --filter @workspace/mockup-sandbox run dev"
+waitForPort = 5173
+
+[workflows.workflow.metadata]
+outputType = "webview"
+isCanvasWorkflow = true
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
