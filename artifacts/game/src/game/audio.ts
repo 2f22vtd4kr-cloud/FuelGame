@@ -865,36 +865,36 @@ class AudioManager {
   private _footstepAsphalt(): void {
     const ctx = this.c!; const dest = this.dest!;
     const t = ctx.currentTime;
-    const bufSize = Math.floor(ctx.sampleRate * 0.018);
+    const bufSize = Math.floor(ctx.sampleRate * 0.022);
     const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
     const data = buf.getChannelData(0);
     for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
     const noise = ctx.createBufferSource();
     const ng = ctx.createGain();
     const f = ctx.createBiquadFilter();
-    f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 1.5;
+    f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 1.2;
     noise.buffer = buf;
     noise.connect(f); f.connect(ng); ng.connect(dest);
-    ng.gain.value = 0.09;
-    noise.start(t); noise.stop(t + 0.02);
+    ng.gain.value = 0.28;
+    noise.start(t); noise.stop(t + 0.025);
   }
 
   /** §8.2 footstep_grass — muffled soft thud */
   private _footstepGrass(): void {
     const ctx = this.c!; const dest = this.dest!;
     const t = ctx.currentTime;
-    const bufSize = Math.floor(ctx.sampleRate * 0.03);
+    const bufSize = Math.floor(ctx.sampleRate * 0.04);
     const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
     const data = buf.getChannelData(0);
     for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize);
     const noise = ctx.createBufferSource();
     const ng = ctx.createGain();
     const f = ctx.createBiquadFilter();
-    f.type = 'lowpass'; f.frequency.value = 600;
+    f.type = 'lowpass'; f.frequency.value = 500;
     noise.buffer = buf;
     noise.connect(f); f.connect(ng); ng.connect(dest);
-    ng.gain.value = 0.07;
-    noise.start(t); noise.stop(t + 0.035);
+    ng.gain.value = 0.22;
+    noise.start(t); noise.stop(t + 0.045);
   }
 
   /** §8.2 car_door — bass thud with metallic high click */

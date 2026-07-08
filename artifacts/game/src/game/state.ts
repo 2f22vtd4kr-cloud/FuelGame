@@ -3,6 +3,44 @@ import { CAR_SPAWNS, TASK_SPAWNS, PLAYER_SPAWNS, DUMPSTER_POSITIONS } from '../d
 import { CHARACTERS, CHARACTER_KEYS } from '../data/characters';
 import { SPRINT_MAX } from './types';
 
+// ─── §3.5 Daily seed PRNG ────────────────────────────────────────────────────
+
+/** mulberry32 — fast seeded PRNG returning [0, 1) */
+function mulberry32(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** FNV-1a hash of a string → uint32 */
+function fnv1a(str: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** Today's date string in Moscow time (YYYY-MM-DD) */
+export function getMoscowDateString(): string {
+  const now = new Date();
+  const msk = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  const y = msk.getUTCFullYear();
+  const m = String(msk.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(msk.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Returns a seeded RNG for today's daily challenge (same result for all players worldwide that day) */
+export function makeDailyRng(): () => number {
+  return mulberry32(fnv1a(getMoscowDateString()));
+}
+
 // ─── Singleton mutable game state ────────────────────────────────────────────
 // Mutated at 60fps by the game loop. NOT React state.
 // React HUD reads a shallow snapshot at 10Hz via GameCanvas.
@@ -49,6 +87,7 @@ export function createInitialState(): GameState {
     tutorialStep: 0,
     backstabMoment: null,
     backstabMomentAcked: false,
+    isDailySeedGame: false,
   };
 }
 
@@ -62,12 +101,16 @@ export function startGame(
   humanCharacter: string,
   playerCount = 8,
   siphonersCount = 2,
+  useDailySeed = false,
 ): void {
+  // §3.5 Use seeded RNG for daily challenge — same game layout for all players each day
+  const rng = useDailySeed ? makeDailyRng() : Math.random.bind(Math);
+
   const charKey = humanCharacter as typeof CHARACTER_KEYS[number];
 
   // Build player list
   const botCharKeys = CHARACTER_KEYS.filter(k => k !== charKey);
-  shuffle(botCharKeys);
+  shuffleWith(botCharKeys, rng);
   const allChars = [charKey, ...botCharKeys.slice(0, playerCount - 1)];
 
   // Assign roles randomly — human included
@@ -76,7 +119,7 @@ export function startGame(
     () => 'khozain' as const,
   );
   const allIndices = Array.from({ length: playerCount }, (_, i) => i);
-  shuffle(allIndices);
+  shuffleWith(allIndices, rng);
   for (let i = 0; i < Math.min(siphonersCount, playerCount - 1); i++) {
     roleAssign[allIndices[i]] = 'slivshchik';
   }
@@ -91,9 +134,9 @@ export function startGame(
       role: roleAssign[i],
       isHuman: i === 0,
       isAlive: true,
-      pos: { x: spawn.x + (Math.random() - 0.5) * 30, y: spawn.y + (Math.random() - 0.5) * 30 },
+      pos: { x: spawn.x + (rng() - 0.5) * 30, y: spawn.y + (rng() - 0.5) * 30 },
       vel: { x: 0, y: 0 },
-      speed: i === 0 ? 165 : 130 + Math.random() * 40,
+      speed: i === 0 ? 165 : 130 + rng() * 40,
       facingAngle: 0,
       stamina: SPRINT_MAX,
       isSprinting: false,
@@ -124,7 +167,7 @@ export function startGame(
       botTarget: null,
       botTaskId: null,
       botCarId: null,
-      botCooldown: Math.random() * 2,
+      botCooldown: rng() * 2,
       botPath: [],
       botReplanTimer: 0,
       botPathTarget: null,
@@ -135,7 +178,7 @@ export function startGame(
   const cars: Car[] = CAR_SPAWNS.slice(0, 4).map(cs => ({
     id: cs.id,
     pos: { ...cs.pos },
-    fuel: 85 + Math.random() * 15,
+    fuel: 85 + rng() * 15,
     color: cs.color,
     siphoner: null,
     siphonPhase: 0,
@@ -158,12 +201,12 @@ export function startGame(
 
   // §10.2 Immunity tickets — spawn 1 ticket per match (near a random dumpster or offset)
   const immunityTickets: ImmunityTicket[] = [];
-  if (Math.random() < 0.7) { // 70% chance per match (felt better than 5%, gives meaningful choice)
-    const dumpIdx = Math.floor(Math.random() * DUMPSTER_POSITIONS.length);
+  if (rng() < 0.7) { // 70% chance per match (felt better than 5%, gives meaningful choice)
+    const dumpIdx = Math.floor(rng() * DUMPSTER_POSITIONS.length);
     const dp = DUMPSTER_POSITIONS[dumpIdx];
     immunityTickets.push({
       id: `immunity_${Date.now()}`,
-      pos: { x: dp.x + 40 + Math.random() * 40, y: dp.y + (Math.random() - 0.5) * 30 },
+      pos: { x: dp.x + 40 + rng() * 40, y: dp.y + (rng() - 0.5) * 30 },
     });
   }
 
@@ -178,10 +221,10 @@ export function startGame(
     if (khozainIndices.length > 0) {
       // Prefer assigning 'barsik' neutral to whoever picked the barsik character
       const barsikIdx = players.findIndex(p => p.character === 'barsik' && p.role === 'khozain');
-      const targetIdx = barsikIdx >= 0 ? barsikIdx : khozainIndices[Math.floor(Math.random() * khozainIndices.length)];
+      const targetIdx = barsikIdx >= 0 ? barsikIdx : khozainIndices[Math.floor(rng() * khozainIndices.length)];
       const pickedRole = barsikIdx >= 0
         ? 'barsik'
-        : neutralRoles[Math.floor(Math.random() * neutralRoles.length)];
+        : neutralRoles[Math.floor(rng() * neutralRoles.length)];
       players[targetIdx].neutralRole = pickedRole;
     }
   }
@@ -206,13 +249,18 @@ export function startGame(
   gs.activeMiniGame = null;
   gs.activeSabotages = [];
   gs.immunityTickets = immunityTickets;
+  gs.isDailySeedGame = useDailySeed;
 }
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 
-function shuffle<T>(arr: T[]): void {
+function shuffleWith<T>(arr: T[], rng: () => number): void {
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
+}
+
+function shuffle<T>(arr: T[]): void {
+  shuffleWith(arr, Math.random.bind(Math));
 }

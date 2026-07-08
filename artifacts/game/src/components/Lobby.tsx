@@ -65,16 +65,15 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
     return () => clearInterval(id);
   }, []);
 
-  function handleStart() {
+  function handleStart(useDailySeed = false) {
     gs.selectedCharacter = selected;
     gs.botDifficulty = difficulty;
-    // Store player name in profile if not set
     const p = loadProfile();
     if (!p.playerName) {
       p.playerName = CHARACTERS[selected].name.split(' ')[0];
       saveProfile(p);
     }
-    startGame(selected, playerCount, siphonersCount);
+    startGame(selected, useDailySeed ? 6 : playerCount, useDailySeed ? 2 : siphonersCount, useDailySeed);
     onStart();
   }
 
@@ -413,8 +412,24 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
             🪣 Сливщики: сливай баки и не попадайся!
           </div>
 
+          {/* Daily challenge button */}
+          <button onClick={() => handleStart(true)} style={{
+            width: '100%', maxWidth: 380, padding: '14px',
+            background: 'linear-gradient(135deg, #FF8F00 0%, #FFD54F 100%)',
+            border: 'none', borderRadius: 16,
+            fontSize: 14, fontWeight: 800, color: '#1A1A1A',
+            cursor: 'pointer', letterSpacing: 1,
+            boxShadow: '0 4px 18px rgba(255,152,0,0.5)',
+            marginBottom: 8,
+          }}>
+            📅 Ежедневный вызов
+            <span style={{ display: 'block', fontSize: 10, fontWeight: 400, opacity: 0.7, marginTop: 2 }}>
+              Одинаковые роли для всех · войди в топ сегодня
+            </span>
+          </button>
+
           {/* Single-player button */}
-          <button onClick={handleStart} style={{
+          <button onClick={() => handleStart(false)} style={{
             width: '100%', maxWidth: 380, padding: '18px',
             background: 'linear-gradient(135deg, #FF5722 0%, #FF8A65 100%)',
             border: 'none', borderRadius: 16,

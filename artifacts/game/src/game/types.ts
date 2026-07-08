@@ -419,6 +419,8 @@ export interface GameState {
   // §9.2 Backstab Moment detection
   backstabMoment: 'catch_siphoner' | 'caught_siphoning' | 'dramatic_eject' | null;
   backstabMomentAcked: boolean; // true once player has saved/dismissed
+  // §3.5 Daily seed SP mode — true when game was started with the daily seed
+  isDailySeedGame: boolean;
 }
 
 // ─── Input ────────────────────────────────────────────────────────────────────

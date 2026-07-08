@@ -6,7 +6,7 @@
 - [95-Y Vol1 gap mechanics](game-vol1-gaps.md) — briefing/flowerbeds/dumpster-vent/siphon-audio/crouch-stealth; briefing uses gs.briefingTimer as single source of truth (no React timer)
 - [95-Y multiplayer](game-multiplayer.md) — WS at /api/ws; tickGameMulti 3-phase design avoids N× timer bugs; gameActions.ts proxy layer; room.ts handles disconnect/host-reassign
 - [95-Y Vol1 gaps](game-vol1-gaps.md) — match timer, neutral roles (barsik/cop/janitor), bot pipe-burst fix, skip-discussion majority, per-player stats, share card PNG, Барсик smaller circle
-- [95-Y audio and sprint](game-audio-sprint.md) — §8.1 music system + §8.2 12 new SFX; sprint is now a toggle (Shift key); music lifecycle wired to phase transitions in tickGame top-level guard
+- [95-Y audio and sprint](game-audio-sprint.md) — §8.1 music system + §8.2 12 new SFX; sprint is now a toggle (Shift key); music lifecycle wired to phase transitions in tickGame top-level guard; footstep gains boosted to 0.28/0.22 (were 0.09/0.07)
 - [95-Y Vol1 final gaps](game-vol1-gaps.md) — briefing atmospheric text + skip button; getMatchTitle §9.1; replayBuffer.ts §9.2 Backstab Moment capture/download; backstabMoment on GameState
 - [95-Y vent and price fixes](game-vent-price.md) — human slivshchik vent always enabled (was bug-gated by botDifficulty); VENT_FLASH_DURATION constant; AI-95 price drifts sinusoidally each tick
 - [95-Y Vol1 tier1 completion](game-vol1-tier1-complete.md) — all HANDOFF Tier 1 items confirmed done; session 6 added babushka role hints + multiplayer auto-start
@@ -14,7 +14,7 @@
 - [95-Y Vol1 session 8 gaps](game-vol1-final-session8.md) — §10.2 Lobby "Получить талоны" button, clickable GameResults CTA, §2.2 double-tap sprint + swipe-up emote; z-index fix for action buttons
 - [95-Y Quick Play matchmaking](game-quickplay.md) — §5.5 server-side queue in wsHandler.ts; QUICK_MATCH_SIZE=4; GameRoom.isQuickPlay triggers server countdown; room_joined carries isQuickPlay flag; MultiplayerLobby has queueing screen
 - [95-Y Economy & Progression](game-economy-progression.md) — §3.2/§3.3/§3.5/§3.6 Бабки+XP+daily+achievements; localStorage profile; update stats BEFORE checkAchievements to avoid double-count; correctVotes tracked in resolveMeeting()
-- [95-Y Leaderboard & Shop](game-leaderboard-shop.md) — §3.4/§9.3/§10.3 done; leaderboard_entries table (no FK); POST /api/leaderboard upserts by deviceId; ShopTab has Stars flow via window.Telegram.WebApp.openInvoice; Lobby has 3 tabs (game/shop/leaderboard)
+- [95-Y Leaderboard & Shop](game-leaderboard-shop.md) — §3.4/§9.3/§10.3 done; leaderboard_entries table (no FK); POST /api/leaderboard upserts by deviceId; ShopTab has Stars flow via window.Telegram.WebApp.openInvoice; Lobby has 3 tabs (game/shop/leaderboard); LeaderboardTab has 3 sub-tabs (Сезон/Сегодня/Рядом); submitLeaderboardScore takes iWon param for daily SP submission
 - [95-Y viral mechanics and tutorial](game-viral-tutorial.md) — §9.4 share prompts + friend invite deep link (+ startapp consumption); §12.4 4-step Tutorial.tsx; §3.5 daily-exclusive hats; isFirstWin detection in rewards.ts
 - [95-Y session 9 gaps](game-session9-gaps.md) — interpolation ring buffer, Stars backend invoice, camera lerp, api-server +30s task extension, low-fuel warning
 - [95-Y session 10 cosmetics/visuals](game-session10-cosmetics-visuals.md) — character silhouettes, pets/car skins shop, report button §5.6, neutral-role ejection text

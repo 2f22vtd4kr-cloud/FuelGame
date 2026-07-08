@@ -140,7 +140,7 @@ export function applyMatchRewards(gs: GameState): MatchRewards {
   saveProfile(profile);
 
   // ── §9.3 Submit score to leaderboard (fire-and-forget, no await) ────────────
-  submitLeaderboardScore(profile, gs).catch(() => { /* silent — offline ok */ });
+  submitLeaderboardScore(profile, gs, iWon).catch(() => { /* silent — offline ok */ });
 
   return {
     babkiEarned: babki,
@@ -158,12 +158,14 @@ export function applyMatchRewards(gs: GameState): MatchRewards {
 }
 
 /** §9.3 Fire-and-forget leaderboard score submission */
-async function submitLeaderboardScore(profile: PlayerProfile, gs: GameState): Promise<void> {
+async function submitLeaderboardScore(profile: PlayerProfile, gs: GameState, iWon: boolean): Promise<void> {
   const localPlayer = gs.players.find(p => p.id === gs.localPlayerId);
   const name = profile.playerName?.trim() || localPlayer?.name || 'Аноним';
   const character = (localPlayer?.character as string) ?? 'denis';
 
   const apiBase = import.meta.env.VITE_API_URL ?? '/api';
+
+  // Submit to all-time leaderboard
   await fetch(`${apiBase}/leaderboard`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -176,6 +178,26 @@ async function submitLeaderboardScore(profile: PlayerProfile, gs: GameState): Pr
       deviceId: profile.deviceId,
     }),
   });
+
+  // §3.5 Submit to daily leaderboard if this was a daily seed SP win
+  // Metric: time survived / fastest match completion (stored as elapsed seconds on win)
+  if (gs.isDailySeedGame && iWon) {
+    const telegramUserId = (window as typeof window & { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { id?: number } } } } })
+      .Telegram?.WebApp?.initDataUnsafe?.user?.id;
+
+    if (telegramUserId) {
+      const elapsedSeconds = Math.round(gs.time);
+      await fetch(`${apiBase}/leaderboard/daily`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: telegramUserId,
+          score: elapsedSeconds,
+          matchesPlayed: 1,
+        }),
+      });
+    }
+  }
 }
 
 // ── §3.5 Daily challenge progress from a single match ─────────────────────────
