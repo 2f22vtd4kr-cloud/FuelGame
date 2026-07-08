@@ -15,6 +15,18 @@ a new character are written in `HANDOFF.md` under "Sprite-sheet generation
 workflow"** — read that before starting the next character, since it's the
 part meant to survive across repo re-imports/sessions.
 
+## Detail pass (Denis v2)
+- To add real detail (glasses, cap badge, jacket zipper, jeans vs. plain pants,
+  boot soles) without changing the final 64×64 frame size or touching
+  `sprites.ts` metadata, bump the working grid resolution and lower the scale
+  proportionally (16×16×4 → 32×32×2) rather than redesigning the pipeline.
+  **Why:** doubling the grid at constant final size roughly doubles addressable
+  detail while staying nearest-neighbor/nostalgic-pixelated — just re-doubling
+  the *old* 16×16 coordinates would only produce bigger blocks, not more detail.
+- Always crop+view individual frames (ImageMagick `-crop`+`-filter point -resize`)
+  at both native and actual in-game draw size (spriteSize ~42px) before calling
+  a redesign done — details that read at 64px can disappear at 42px.
+
 ## Key non-obvious decisions
 - Animation frame-rate is driven by actual per-frame position delta (px/sec),
   not the raw joystick vector magnitude — **why:** in this game, movement
