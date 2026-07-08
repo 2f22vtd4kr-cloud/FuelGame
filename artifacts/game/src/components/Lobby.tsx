@@ -1,4 +1,6 @@
+import './Lobby.css';
 import React, { useState, useEffect } from 'react';
+import { Trophy, ShoppingBag, Gamepad2, Medal, ArrowRight, Info, Zap, Flame } from 'lucide-react';
 import type { CharacterKey, BotDifficulty } from '../game/types';
 import { CHARACTERS, CHARACTER_KEYS } from '../data/characters';
 import { gs, startGame } from '../game/state';
@@ -81,431 +83,391 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
   const unlockedAchs = ACHIEVEMENTS.filter(a => profile.achievements.includes(a.id));
 
   const lang = profile.language;
-  const TABS: { id: LobbyTab; label: string; emoji: string }[] = [
-    { id: 'game',        label: t('lobby_tab_game', lang),        emoji: '🎮' },
-    { id: 'shop',        label: t('lobby_tab_shop', lang),        emoji: '🎩' },
-    { id: 'leaderboard', label: t('lobby_tab_leaderboard', lang), emoji: '🏆' },
+  const TABS: { id: LobbyTab; label: string; icon: any }[] = [
+    { id: 'game', label: t('lobby_tab_game', lang), icon: Gamepad2 },
+    { id: 'shop', label: t('lobby_tab_shop', lang), icon: ShoppingBag },
+    { id: 'leaderboard', label: t('lobby_tab_leaderboard', lang), icon: Trophy },
   ];
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 60,
-      background: 'linear-gradient(180deg, #0D1B2A 0%, #1B2838 60%, #0D1B2A 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      overflowY: 'auto', padding: '24px 16px',
-      fontFamily: 'sans-serif',
-    }}>
-      {/* Logo / Title */}
-      <div style={{ textAlign: 'center', marginBottom: 12 }}>
-        <div style={{ fontSize: 48, marginBottom: 4 }}>🏘️</div>
-        <div style={{
-          fontSize: 32, fontWeight: 900, color: '#FF5722',
-          letterSpacing: 3, textShadow: '0 2px 12px rgba(255,87,34,0.5)',
-        }}>
-          95-Й
-        </div>
-        <div style={{ fontSize: 13, color: '#9E9E9E', marginTop: 4, letterSpacing: 2 }}>
-          ЖК «Цветочные Поляны»
-        </div>
-        <div style={{ fontSize: 11, color: '#607D8B', marginTop: 2 }}>
-          Кто из соседей сливает бензин?
-        </div>
-      </div>
+    <div className="lobby-constructivist-root flex flex-col items-center">
+      <div className="constructivist-bg"></div>
+      <div className="constructivist-beams"></div>
 
-      {/* ── §3.2/§3.3 Profile header (always visible) ── */}
-      <div style={{
-        width: '100%', maxWidth: 380,
-        background: 'rgba(255,215,0,0.07)',
-        border: '1px solid rgba(255,215,0,0.2)',
-        borderRadius: 12, padding: '10px 14px', marginBottom: 10,
-        display: 'flex', alignItems: 'center', gap: 10,
-      }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 'bold', color: '#FFD700' }}>
-              💰 {profile.babki} бабок
-            </span>
-            <span style={{ fontSize: 11, color: '#9E9E9E' }}>
-              • Матчей: {profile.totalMatchesPlayed}
-            </span>
+      <div className="w-full max-w-[420px] relative z-10 flex flex-col min-h-full mx-auto">
+
+        {/* Dynamic Header Composition */}
+        <header className="relative w-full pt-12 pb-6 px-4">
+          <div className="absolute top-[-20%] left-[-10%] w-[120%] h-[120%] bg-[#cc2b1d] -skew-y-6 z-0 border-b-8 border-[#1a1a1a]"></div>
+          <div className="absolute top-0 right-[-10%] w-[50%] h-[80%] bg-[#e5a50a] rotate-[15deg] z-0 border-4 border-[#1a1a1a] shadow-[8px_8px_0_#1a1a1a]"></div>
+
+          <div className="relative z-10 flex flex-col">
+            <div className="flex items-end justify-between">
+              <div className="flex flex-col">
+                <span className="text-[100px] sm:text-[120px] leading-[0.8] tracking-tighter russo-font text-[#f4ebd0] drop-shadow-[4px_4px_0_#1a1a1a]">95</span>
+                <span className="text-[36px] sm:text-[40px] leading-none tracking-tight text-[#1a1a1a] font-black uppercase mt-[-10px] ml-2 bg-[#e5a50a] px-2 w-max border-2 border-[#1a1a1a] rotate-[-3deg]">бакстаб</span>
+              </div>
+              <div className="text-[70px] sm:text-[80px] drop-shadow-[4px_4px_0_#1a1a1a] rotate-[15deg]">🏘️</div>
+            </div>
+
+            <div className="bg-[#1a1a1a] text-[#f4ebd0] p-2 mt-4 rotate-[2deg] shadow-[4px_4px_0_#e5a50a] w-max max-w-full">
+              <span className="font-black text-sm uppercase tracking-widest block text-center">ЖК «Цветочные Поляны»</span>
+            </div>
+            <p className="mt-2 text-[#f4ebd0] font-bold text-xs uppercase tracking-wider pl-2 border-l-4 border-[#e5a50a]">
+              Кто из соседей сливает бензин?
+            </p>
           </div>
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-              <span style={{ fontSize: 9, color: '#9E9E9E' }}>Боевой Пропуск — Ур. {tier}</span>
-              <span style={{ fontSize: 9, color: '#64B5F6' }}>{tierPct}%</span>
+        </header>
+
+        {/* Profile Stats - Angled Block */}
+        <div className="px-4 mb-8">
+          <div className="bg-white border-4 border-[#1a1a1a] p-1 flex shadow-[6px_6px_0_#cc2b1d] -skew-x-6 relative">
+            <div className="flex-1 bg-[#f4ebd0] p-3 flex flex-col justify-center border-r-4 border-[#1a1a1a] min-w-0">
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <span className="font-black text-xl sm:text-2xl uppercase tracking-tighter skew-x-6">💰 {profile.babki}</span>
+                <span className="text-[10px] font-bold text-[#1a1a1a] uppercase bg-[#e5a50a] px-1 skew-x-6">МАТЧЕЙ: {profile.totalMatchesPlayed}</span>
+              </div>
+              <div className="relative h-4 bg-[#1a1a1a] overflow-hidden skew-x-6">
+                <div
+                  className="h-full bg-[#cc2b1d]"
+                  style={{ width: `${tierPct}%` }}
+                ></div>
+                <span className="absolute inset-0 flex items-center pl-2 text-[10px] font-black text-white mix-blend-difference">
+                  УР {tier} — {tierPct}%
+                </span>
+              </div>
             </div>
-            <div style={{ height: 5, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', borderRadius: 3,
-                background: 'linear-gradient(90deg, #1565C0, #64B5F6)',
-                width: `${tierPct}%`,
-              }} />
-            </div>
+            <button
+              onClick={() => setShowAchievements(v => !v)}
+              className="bg-[#1a1a1a] text-[#f4ebd0] px-4 flex flex-col items-center justify-center hover:bg-[#cc2b1d] transition-colors"
+            >
+              <div className="skew-x-6 flex flex-col items-center">
+                <Medal size={28} />
+                <span className="font-black text-sm mt-1">{unlockedAchs.length}/{ACHIEVEMENTS.length}</span>
+              </div>
+            </button>
           </div>
         </div>
-        <button
-          onClick={() => setShowAchievements(v => !v)}
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: 8, padding: '6px 10px',
-            cursor: 'pointer', textAlign: 'center', flexShrink: 0,
-          }}
-        >
-          <div style={{ fontSize: 18 }}>🏅</div>
-          <div style={{ fontSize: 9, color: '#9E9E9E', marginTop: 2 }}>{unlockedAchs.length}/50</div>
-        </button>
-      </div>
 
-      {/* ── Tab Navigation ── */}
-      <div style={{
-        width: '100%', maxWidth: 380,
-        display: 'flex', gap: 6, marginBottom: 14,
-      }}>
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              flex: 1, padding: '9px 4px',
-              background: activeTab === tab.id
-                ? 'rgba(255,87,34,0.18)'
-                : 'rgba(255,255,255,0.04)',
-              border: `2px solid ${activeTab === tab.id ? '#FF5722' : 'rgba(255,255,255,0.1)'}`,
-              borderRadius: 10, cursor: 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-            }}
-          >
-            <span style={{ fontSize: 18 }}>{tab.emoji}</span>
-            <span style={{
-              fontSize: 9, fontWeight: 'bold', letterSpacing: 0.5,
-              color: activeTab === tab.id ? '#FF5722' : '#9E9E9E',
-            }}>
-              {tab.label.toUpperCase()}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* ── §3.6 Achievements panel (expandable, always shown) ── */}
-      {showAchievements && (
-        <div style={{
-          width: '100%', maxWidth: 380,
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 12, padding: '12px 14px', marginBottom: 14,
-          maxHeight: 260, overflowY: 'auto',
-        }}>
-          <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 10, letterSpacing: 1 }}>
-            ДОСТИЖЕНИЯ ({unlockedAchs.length}/50)
-          </div>
-          {ACHIEVEMENTS.map(ach => {
-            const unlocked = profile.achievements.includes(ach.id);
-            return (
-              <div key={ach.id} style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.04)',
-                opacity: unlocked ? 1 : 0.35,
-              }}>
-                <div style={{ fontSize: 20, flexShrink: 0, filter: unlocked ? 'none' : 'grayscale(1)' }}>{ach.emoji}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: unlocked ? '#FFD700' : '#9E9E9E', fontWeight: unlocked ? 'bold' : 'normal' }}>
-                    {ach.title}
-                  </div>
-                  <div style={{ fontSize: 9, color: '#616161' }}>{ach.description}</div>
-                </div>
-                <div style={{ fontSize: 10, color: '#FFD700', flexShrink: 0 }}>
-                  {unlocked ? `✅ +${ach.babkiReward}` : `${ach.babkiReward}💰`}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ════════ TAB CONTENT ════════ */}
-
-      {/* ── SHOP TAB ── */}
-      {activeTab === 'shop' && (
-        <ShopTab key={profileKey} onProfileChange={() => setProfileKey(k => k + 1)} />
-      )}
-
-      {/* ── LEADERBOARD TAB ── */}
-      {activeTab === 'leaderboard' && (
-        <LeaderboardTab myDeviceId={profile.deviceId} />
-      )}
-
-      {/* ── GAME TAB ── */}
-      {activeTab === 'game' && (
-        <>
-          {/* §3.5 Daily challenge */}
-          <div style={{
-            width: '100%', maxWidth: 380,
-            background: dailyCompleted ? 'rgba(76,175,80,0.12)' : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${dailyCompleted ? 'rgba(76,175,80,0.4)' : 'rgba(255,255,255,0.1)'}`,
-            borderRadius: 10, padding: '8px 14px', marginBottom: 14,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-          }}>
-            <div>
-              <div style={{ fontSize: 9, color: dailyCompleted ? '#4CAF50' : '#9E9E9E', marginBottom: 2, letterSpacing: 1, fontWeight: 'bold' }}>
-                ☀️ ЕЖЕДНЕВНОЕ ЗАДАНИЕ
-              </div>
-              <div style={{ fontSize: 11, color: '#FFF' }}>
-                {dailyDef.emoji} {dailyDef.label}
-              </div>
-            </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              {dailyCompleted ? (
-                <span style={{ fontSize: 13, color: '#4CAF50', fontWeight: 'bold' }}>✅ Готово</span>
-              ) : (
-                <>
-                  <div style={{ fontSize: 12, color: '#FFD700', fontWeight: 'bold' }}>
-                    {dailyProgress}/{dailyDef.target}
-                  </div>
-                  <div style={{ fontSize: 9, color: '#9E9E9E' }}>+200 бабок</div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Character select */}
-          <div style={{ width: '100%', maxWidth: 380, marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 8, letterSpacing: 1 }}>
-              ВЫБЕРИ ПЕРСОНАЖА
-            </div>
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
-              gap: 8, marginBottom: 12,
-            }}>
-              {CHARACTER_KEYS.map(key => {
-                const c = CHARACTERS[key];
-                const isSelected = key === selected;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setSelected(key)}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center',
-                      gap: 2, padding: '8px 4px',
-                      background: isSelected ? `${c.color}33` : 'rgba(255,255,255,0.05)',
-                      border: isSelected ? `2px solid ${c.color}` : '2px solid transparent',
-                      borderRadius: 10, cursor: 'pointer',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    <div style={{ fontSize: 24 }}>{c.emoji}</div>
-                    <div style={{ fontSize: 8, color: isSelected ? '#FFF' : '#9E9E9E', textAlign: 'center', lineHeight: 1.2 }}>
-                      {c.name.split(' ')[0]}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div style={{
-              background: `${charDef.color}22`,
-              border: `1.5px solid ${charDef.color}66`,
-              borderRadius: 12, padding: '12px 14px',
-              display: 'flex', gap: 12, alignItems: 'flex-start',
-            }}>
-              <div style={{ fontSize: 40, flexShrink: 0 }}>{charDef.emoji}</div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 'bold', color: '#FFF', marginBottom: 2 }}>
-                  {charDef.name}
-                </div>
-                <div style={{ fontSize: 11, color: '#BDBDBD', lineHeight: 1.4, marginBottom: 6 }}>
-                  {charDef.description}
-                </div>
-                <div style={{ fontSize: 10, color: charDef.color, fontStyle: 'italic' }}>
-                  «{charDef.voiceLines[0]}»
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Game settings */}
-          <div style={{
-            width: '100%', maxWidth: 380,
-            background: 'rgba(255,255,255,0.05)',
-            borderRadius: 12, padding: '14px 16px', marginBottom: 16,
-          }}>
-            <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 12, letterSpacing: 1 }}>
-              НАСТРОЙКИ ИГРЫ
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, color: '#FFF' }}>Игроков (включая ботов)</span>
-                  <span style={{ fontSize: 12, color: '#FF5722', fontWeight: 'bold' }}>{playerCount}</span>
-                </div>
-                <input type="range" min={4} max={10} value={playerCount}
-                  onChange={e => {
-                    const n = +e.target.value;
-                    setPlayerCount(n);
-                    if (siphonersCount >= n - 1) setSiphonersCount(Math.max(1, n - 2));
-                  }}
-                  style={{ width: '100%', accentColor: '#FF5722' }}
-                />
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, color: '#FFF' }}>Сливщиков</span>
-                  <span style={{ fontSize: 12, color: '#F44336', fontWeight: 'bold' }}>{siphonersCount} 🪣</span>
-                </div>
-                <input type="range" min={1} max={Math.floor((playerCount - 1) / 2)}
-                  value={siphonersCount}
-                  onChange={e => setSiphonersCount(+e.target.value)}
-                  style={{ width: '100%', accentColor: '#F44336' }}
-                />
-              </div>
-            </div>
-
-            <div style={{
-              marginTop: 10, padding: '8px 12px',
-              background: 'rgba(255,255,255,0.04)',
-              borderRadius: 8, fontSize: 11, color: '#9E9E9E', lineHeight: 1.4,
-            }}>
-              🏠 {playerCount - siphonersCount} хозяев vs 🪣 {siphonersCount} сливщик{siphonersCount === 1 ? '' : 'а'}
-              <br/>Задача хозяев: заполни метр единства до 100% или выгони всех сливщиков.
-            </div>
-
-            <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 8, letterSpacing: 1 }}>
-                СЛОЖНОСТЬ БОТОВ
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-                {(Object.keys(DIFFICULTY_LABELS) as BotDifficulty[]).map(key => {
-                  const d = DIFFICULTY_LABELS[key];
-                  const isSelected = key === difficulty;
+        {/* Achievements panel */}
+        {showAchievements && (
+          <div className="px-4 mb-8">
+            <div className="bg-[#1a1a1a] text-[#f4ebd0] border-4 border-[#1a1a1a] p-4 shadow-[6px_6px_0_#e5a50a] max-h-[300px] overflow-y-auto">
+              <h3 className="font-black uppercase text-lg mb-3 russo-font border-b-2 border-[#e5a50a] pb-2">
+                СТАХАНОВСКИЕ ДОСТИЖЕНИЯ ({unlockedAchs.length}/{ACHIEVEMENTS.length})
+              </h3>
+              <div className="space-y-1">
+                {ACHIEVEMENTS.map(ach => {
+                  const unlocked = profile.achievements.includes(ach.id);
                   return (
-                    <button key={key} onClick={() => setDifficulty(key)} style={{
-                      background: isSelected ? `${d.color}22` : 'rgba(255,255,255,0.04)',
-                      border: `2px solid ${isSelected ? d.color : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: 8, padding: '8px 4px', cursor: 'pointer',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                    }}>
-                      <span style={{ fontSize: 18 }}>{d.emoji}</span>
-                      <span style={{ fontSize: 9, color: isSelected ? d.color : '#9E9E9E', fontWeight: isSelected ? 'bold' : 'normal', lineHeight: 1.2 }}>{d.label}</span>
-                      <span style={{ fontSize: 8, color: '#616161', lineHeight: 1.1 }}>{d.desc}</span>
-                    </button>
+                    <div key={ach.id} className={`flex items-center gap-3 py-1.5 border-b border-[#f4ebd0]/10 ${unlocked ? '' : 'opacity-40'}`}>
+                      <div className={`text-xl shrink-0 ${unlocked ? '' : 'grayscale'}`}>{ach.emoji}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-xs font-black uppercase leading-tight ${unlocked ? 'text-[#e5a50a]' : 'text-[#f4ebd0]'}`}>{ach.title}</div>
+                        <div className="text-[10px] text-[#f4ebd0]/60 leading-tight">{ach.description}</div>
+                      </div>
+                      <div className="text-[10px] font-black shrink-0 text-[#e5a50a]">
+                        {unlocked ? `✅ +${ach.babkiReward}` : `${ach.babkiReward}💰`}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
             </div>
           </div>
+        )}
 
-          {/* How to play */}
-          <div style={{
-            width: '100%', maxWidth: 380,
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: 12, padding: '12px 14px', marginBottom: 16,
-            fontSize: 11, color: '#757575', lineHeight: 1.6,
-          }}>
-            <div style={{ color: '#9E9E9E', fontWeight: 'bold', marginBottom: 6, fontSize: 11, letterSpacing: 1 }}>
-              КАК ИГРАТЬ
+        {/* Diagonal Navigation */}
+        <nav className="px-4 mb-8 flex flex-col gap-2 relative">
+          <div className="absolute left-6 top-0 bottom-0 w-1 bg-[#cc2b1d] z-0"></div>
+          {TABS.map((tab, idx) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            const ml = idx === 1 ? 'ml-8' : idx === 2 ? 'ml-4' : 'ml-12';
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`z-10 ${ml} py-2 px-6 flex items-center gap-3 border-4 border-[#1a1a1a] transition-all
+                  ${isActive
+                    ? 'bg-[#cc2b1d] text-[#f4ebd0] shadow-[4px_4px_0_#1a1a1a] translate-x-2'
+                    : 'bg-white text-[#1a1a1a] hover:bg-[#f4ebd0]'}`}
+              >
+                <Icon size={24} className={isActive ? 'rotate-[15deg]' : ''} />
+                <span className="font-black text-lg uppercase tracking-widest russo-font">{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <main className="px-4 flex-1 pb-12 z-10">
+
+          {activeTab === 'shop' && (
+            <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0_#cc2b1d] overflow-hidden">
+              <ShopTab key={profileKey} onProfileChange={() => setProfileKey(k => k + 1)} />
             </div>
-            🕹️ Двигайся джойстиком (или WASD на ПК)<br/>
-            🅴 Кнопка E — взаимодействие с объектами<br/>
-            🌯 Выполняй задачи → заполняй метр единства<br/>
-            🔔 Подойди к арке и нажми E → вызвать сходку<br/>
-            🗳️ На сходке голосуй за подозреваемых<br/>
-            🪣 Сливщики: сливай баки и не попадайся!
-          </div>
+          )}
 
-          {/* Daily challenge button */}
-          <button onClick={() => handleStart(true)} style={{
-            width: '100%', maxWidth: 380, padding: '14px',
-            background: 'linear-gradient(135deg, #FF8F00 0%, #FFD54F 100%)',
-            border: 'none', borderRadius: 16,
-            fontSize: 14, fontWeight: 800, color: '#1A1A1A',
-            cursor: 'pointer', letterSpacing: 1,
-            boxShadow: '0 4px 18px rgba(255,152,0,0.5)',
-            marginBottom: 8,
-          }}>
-            📅 Ежедневный вызов
-            <span style={{ display: 'block', fontSize: 10, fontWeight: 400, opacity: 0.7, marginTop: 2 }}>
-              Одинаковые роли для всех · войди в топ сегодня
-            </span>
-          </button>
+          {activeTab === 'leaderboard' && (
+            <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0_#e5a50a] overflow-hidden">
+              <LeaderboardTab myDeviceId={profile.deviceId} />
+            </div>
+          )}
 
-          {/* Single-player button */}
-          <button onClick={() => handleStart(false)} style={{
-            width: '100%', maxWidth: 380, padding: '18px',
-            background: 'linear-gradient(135deg, #FF5722 0%, #FF8A65 100%)',
-            border: 'none', borderRadius: 16,
-            fontSize: 18, fontWeight: 900, color: '#FFF',
-            cursor: 'pointer', letterSpacing: 2,
-            boxShadow: '0 6px 24px rgba(255,87,34,0.5)',
-            textTransform: 'uppercase' as const,
-            marginBottom: 10,
-          }}>
-            🎮 {lang === 'en' ? t('lobby_start', lang) : 'Играть (одиночная)'}
-          </button>
+          {activeTab === 'game' && (
+            <div className="space-y-10">
 
-          {/* Multiplayer button */}
-          <button onClick={onMultiplayer} style={{
-            width: '100%', maxWidth: 380, padding: '16px',
-            background: 'rgba(33,150,243,0.15)',
-            border: '2px solid rgba(33,150,243,0.5)',
-            borderRadius: 16, fontSize: 16, fontWeight: 700, color: '#64B5F6',
-            cursor: 'pointer', letterSpacing: 1,
-            boxShadow: '0 4px 16px rgba(33,150,243,0.2)',
-          }}>
-            🌐 {lang === 'en' ? t('lobby_multiplayer', lang) : 'Мультиплеер (с друзьями)'}
-          </button>
-
-          {/* §10.2 Integration 03 — "Получить талоны" CTA */}
-          <button
-            onClick={() => {
-              const tg = (window as any).Telegram?.WebApp;
-              if (tg?.openTelegramLink) {
-                tg.openTelegramLink('https://t.me/fuel_fuel_fuel_bot');
-              } else {
-                window.open('https://t.me/fuel_fuel_fuel_bot', '_blank');
-              }
-            }}
-            style={{
-              width: '100%', maxWidth: 380, padding: '12px 16px',
-              background: 'linear-gradient(135deg, rgba(255,193,7,0.15) 0%, rgba(255,152,0,0.15) 100%)',
-              border: '1.5px solid rgba(255,193,7,0.45)',
-              borderRadius: 14, marginTop: 6,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer', gap: 10,
-            }}
-          >
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#FFD700' }}>
-                🎟️ Получить талоны на бензин
+              {/* Daily Challenge - Diagonal Ribbon */}
+              <div className="relative">
+                <div className={`absolute inset-0 rotate-[2deg] border-4 border-[#1a1a1a] shadow-[6px_6px_0_rgba(0,0,0,0.3)] z-0 ${dailyCompleted ? 'bg-[#4CAF50]' : 'bg-[#e5a50a]'}`}></div>
+                <div className="bg-[#1a1a1a] text-[#f4ebd0] border-4 border-[#1a1a1a] p-4 relative z-10 rotate-[-1deg] flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-[#e5a50a] mb-1">ЕЖЕДНЕВНОЕ ЗАДАНИЕ</span>
+                    <span className="text-base font-black uppercase russo-font block truncate">{dailyDef.emoji} {dailyDef.label}</span>
+                  </div>
+                  <div className="flex flex-col items-end shrink-0">
+                    {dailyCompleted ? (
+                      <span className="text-lg font-black text-[#4CAF50] russo-font">✅ ГОТОВО</span>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-black text-[#cc2b1d] russo-font drop-shadow-[2px_2px_0_#f4ebd0]">{dailyProgress}/{dailyDef.target}</span>
+                        <span className="text-[10px] font-black bg-[#f4ebd0] text-[#1a1a1a] px-1">+200 БАБОК</span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: 9, color: '#BDBDBD', marginTop: 2 }}>
-                Зафиксируй цену АИ-95 на 3 месяца → @fuel_fuel_fuel_bot
+
+              {/* Character Roster */}
+              <section>
+                <div className="bg-[#cc2b1d] text-[#f4ebd0] inline-block px-4 py-2 border-4 border-[#1a1a1a] mb-6 -skew-x-12 shadow-[4px_4px_0_#1a1a1a]">
+                  <h3 className="font-black uppercase text-2xl skew-x-12 russo-font tracking-widest">БРИГАДА</h3>
+                </div>
+
+                <div className="grid grid-cols-5 gap-1.5 bg-[#1a1a1a] p-1.5 border-4 border-[#1a1a1a] mb-6 shadow-[6px_6px_0_#cc2b1d]">
+                  {CHARACTER_KEYS.map(key => {
+                    const c = CHARACTERS[key];
+                    const isSelected = key === selected;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setSelected(key)}
+                        className={`aspect-square flex flex-col items-center justify-center transition-all relative overflow-hidden group border-2
+                          ${isSelected ? 'bg-[#cc2b1d] border-[#f4ebd0] scale-105 z-10 shadow-[2px_2px_0_#1a1a1a]' : 'bg-[#f4ebd0] border-transparent hover:bg-white hover:border-[#1a1a1a] hover:-translate-y-0.5'}
+                        `}
+                      >
+                        <span className="text-2xl sm:text-3xl z-10 drop-shadow-md group-hover:scale-110 transition-transform">{c.emoji}</span>
+                        <span className={`text-[8.5px] sm:text-[10px] font-black uppercase text-center leading-none mt-1 z-10 px-0.5 ${isSelected ? 'text-[#f4ebd0]' : 'text-[#1a1a1a]'}`}>
+                          {c.shortName ?? c.name.split(' ')[0]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Character Dossier - Photomontage Style */}
+                <div className="border-4 border-[#1a1a1a] bg-[#f4ebd0] relative group hover:shadow-[8px_8px_0_#1a1a1a] transition-shadow duration-300 mb-2">
+                  <div className="absolute top-0 right-0 w-[120px] sm:w-[150px] h-full bg-[#e5a50a] z-0 pointer-events-none" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
+
+                  <div className="relative z-10 flex p-3 pr-2 sm:p-4">
+                    <div
+                      className="w-20 h-20 sm:w-24 sm:h-24 border-4 border-[#1a1a1a] rounded-none flex items-center justify-center text-5xl sm:text-6xl shadow-[4px_4px_0_#1a1a1a] shrink-0 -translate-x-2 -translate-y-2 rotate-[-4deg] group-hover:rotate-0 transition-transform duration-300"
+                      style={{ backgroundColor: charDef.color }}
+                    >
+                      {charDef.emoji}
+                    </div>
+                    <div className="ml-2 sm:ml-4 flex flex-col justify-center flex-1 min-w-0">
+                      <div className="flex flex-wrap gap-1.5 mb-2 relative z-10">
+                        {charDef.name.split(' ').map((word, i) => (
+                          <span key={i} className="font-black text-xl sm:text-2xl uppercase leading-none russo-font bg-[#1a1a1a] text-[#f4ebd0] px-2 py-1 -skew-x-6 border-2 border-[#1a1a1a] shadow-[2px_2px_0_#cc2b1d]">
+                            {word}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-[11px] sm:text-xs font-bold text-[#1a1a1a] uppercase bg-white/95 p-1.5 border-l-4 border-[#cc2b1d] leading-tight relative z-10 shadow-[2px_2px_0_rgba(0,0,0,0.1)]">
+                        {charDef.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-[#1a1a1a] text-[#f4ebd0] p-3 sm:p-4 text-center border-t-4 border-[#1a1a1a]">
+                    <span className="font-black text-sm sm:text-base uppercase tracking-widest leading-tight block">«{charDef.voiceLines[0]}»</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* Sliders / Settings */}
+              <section>
+                <div className="bg-[#1a1a1a] text-[#f4ebd0] inline-block px-4 py-2 border-4 border-[#1a1a1a] mb-6 rotate-[2deg] shadow-[4px_4px_0_#e5a50a]">
+                  <h3 className="font-black uppercase text-2xl russo-font tracking-widest">ПЛАН РАБОТ</h3>
+                </div>
+
+                <div className="border-4 border-[#1a1a1a] bg-white p-5 sm:p-6 space-y-8 shadow-[8px_8px_0_#cc2b1d]">
+
+                  <div className="relative">
+                    <div className="flex justify-between items-end mb-3 border-b-4 border-[#1a1a1a] pb-2">
+                      <span className="text-base font-black uppercase tracking-wider">ИГРОКОВ (С БОТАМИ)</span>
+                      <span className="text-4xl font-black text-[#cc2b1d] russo-font drop-shadow-[2px_2px_0_#1a1a1a] leading-none">{playerCount}</span>
+                    </div>
+                    <input
+                      type="range" min={4} max={10} value={playerCount}
+                      onChange={e => {
+                        const n = +e.target.value;
+                        setPlayerCount(n);
+                        if (siphonersCount >= n - 1) setSiphonersCount(Math.max(1, n - 2));
+                      }}
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <div className="flex justify-between items-end mb-3 border-b-4 border-[#1a1a1a] pb-2">
+                      <span className="text-base font-black uppercase tracking-wider">СЛИВЩИКОВ</span>
+                      <span className="text-4xl font-black text-[#1a1a1a] russo-font leading-none">{siphonersCount} 🪣</span>
+                    </div>
+                    <input
+                      type="range" min={1} max={Math.floor((playerCount - 1) / 2)}
+                      value={siphonersCount}
+                      onChange={e => setSiphonersCount(+e.target.value)}
+                    />
+                  </div>
+
+                  <div className="bg-[#e5a50a] border-4 border-[#1a1a1a] p-3 flex flex-col gap-1 text-sm font-black uppercase skew-x-[-5deg]">
+                    <span className="skew-x-[5deg] text-center">🏠 {playerCount - siphonersCount} ХОЗЯЕВ VS 🪣 {siphonersCount} СЛИВЩИК{siphonersCount === 1 ? '' : 'А'}</span>
+                    <span className="skew-x-[5deg] text-[10px] font-bold normal-case text-center leading-tight">
+                      Задача хозяев: заполни метр единства до 100% или выгони всех сливщиков
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-sm font-black uppercase mb-3 block bg-[#1a1a1a] text-[#f4ebd0] w-max px-2 py-1">УРОВЕНЬ БОТОВ</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(Object.keys(DIFFICULTY_LABELS) as BotDifficulty[]).map(key => {
+                        const d = DIFFICULTY_LABELS[key];
+                        const isSelected = key === difficulty;
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => setDifficulty(key)}
+                            className={`border-4 border-[#1a1a1a] p-2 flex items-center gap-2 text-left transition-all
+                              ${isSelected ? 'bg-[#cc2b1d] text-[#f4ebd0] scale-105 shadow-[4px_4px_0_#1a1a1a]' : 'bg-[#f4ebd0] text-[#1a1a1a]'}
+                            `}
+                          >
+                            <span className="text-2xl">{d.emoji}</span>
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-black uppercase leading-none">{d.label}</span>
+                              <span className="text-[8px] font-bold uppercase mt-1 opacity-80">{d.desc}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Instructions - Constructivist list */}
+              <section className="bg-[#cc2b1d] border-4 border-[#1a1a1a] p-4 text-[#f4ebd0] relative overflow-hidden">
+                <div className="absolute -right-10 -bottom-10 opacity-20">
+                  <Info size={120} strokeWidth={3} />
+                </div>
+                <h3 className="font-black text-3xl uppercase mb-4 border-b-4 border-[#f4ebd0] pb-2 russo-font">ПРАВИЛА</h3>
+                <div className="space-y-3 relative z-10">
+                  {[
+                    'Двигайся джойстиком (или WASD на ПК)',
+                    'Кнопка E — взаимодействие с объектами',
+                    'Выполняй задачи → заполняй метр единства',
+                    'Подойди к арке и нажми E → вызвать сходку',
+                    'На сходке голосуй за подозреваемых',
+                    'Сливщики: сливай баки и не попадайся!',
+                  ].map((text, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-6 h-6 bg-[#1a1a1a] text-[#f4ebd0] flex items-center justify-center font-black text-sm shrink-0 -skew-x-12">
+                        <span className="skew-x-12">{i + 1}</span>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-wider leading-tight">{text}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* CTA Banners */}
+              <div className="space-y-6">
+
+                {/* Fuel bot CTA */}
+                <button
+                  onClick={() => {
+                    const tg = (window as any).Telegram?.WebApp;
+                    if (tg?.openTelegramLink) {
+                      tg.openTelegramLink('https://t.me/fuel_fuel_fuel_bot');
+                    } else {
+                      window.open('https://t.me/fuel_fuel_fuel_bot', '_blank');
+                    }
+                  }}
+                  className="w-full border-4 border-[#1a1a1a] bg-[#e5a50a] flex items-stretch hover:shadow-[6px_6px_0_#cc2b1d] transition-all group"
+                >
+                  <div className="bg-[#1a1a1a] text-[#e5a50a] p-4 flex items-center justify-center w-16 group-hover:scale-110 transition-transform">
+                    <Flame size={32} />
+                  </div>
+                  <div className="p-3 text-left flex flex-col justify-center">
+                    <div className="text-sm font-black uppercase russo-font">ТАЛОНЫ НА БЕНЗИН</div>
+                    <div className="text-[9px] font-bold uppercase border-t-2 border-[#1a1a1a] pt-1 mt-1">
+                      Зафиксируй цену АИ-95 → @fuel_fuel_fuel_bot
+                    </div>
+                  </div>
+                </button>
+
+                {/* Daily CTA */}
+                <button onClick={() => handleStart(true)} className="w-full border-4 border-[#1a1a1a] bg-[#1a1a1a] text-[#f4ebd0] p-4 flex items-center justify-between group hover:bg-[#cc2b1d] transition-colors relative overflow-hidden">
+                  <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 opacity-20">
+                    <Zap size={100} />
+                  </div>
+                  <div className="text-left relative z-10">
+                    <span className="block text-xl font-black uppercase russo-font tracking-widest">ЕЖЕДНЕВНЫЙ ВЫЗОВ</span>
+                    <span className="text-[10px] font-bold uppercase opacity-80 border-l-2 border-[#e5a50a] pl-2">Одинаковые роли для всех · войди в топ сегодня</span>
+                  </div>
+                  <ArrowRight size={32} className="relative z-10 text-[#e5a50a] group-hover:translate-x-2 transition-transform" />
+                </button>
+
+                {/* Primary Game CTA */}
+                <button onClick={() => handleStart(false)} className="w-full border-4 border-[#1a1a1a] bg-[#cc2b1d] text-[#f4ebd0] p-6 text-center shadow-[12px_12px_0_#1a1a1a] hover:shadow-[4px_4px_0_#1a1a1a] hover:translate-y-2 hover:translate-x-2 transition-all relative">
+                  <div className="absolute inset-2 border-2 border-[#f4ebd0] border-dashed pointer-events-none"></div>
+                  <span className="text-4xl font-black uppercase tracking-widest russo-font drop-shadow-[2px_2px_0_#1a1a1a]">{lang === 'en' ? t('lobby_start', lang) : 'ИГРАТЬ'}</span>
+                  <span className="block text-sm font-bold uppercase mt-2 bg-[#1a1a1a] px-2 w-max mx-auto -skew-x-12">
+                    ОДИНОЧНАЯ
+                  </span>
+                </button>
+
+                {/* Multiplayer CTA */}
+                <button onClick={onMultiplayer} className="w-full border-4 border-[#1a1a1a] bg-white text-[#1a1a1a] p-4 text-center hover:bg-[#f4ebd0] transition-colors">
+                  <span className="text-2xl font-black uppercase tracking-widest russo-font">{lang === 'en' ? t('lobby_multiplayer', lang) : 'МУЛЬТИПЛЕЕР'}</span>
+                </button>
+
+              </div>
+
+              {/* Ticker Bottom */}
+              <div className="border-y-8 border-[#1a1a1a] bg-[#1a1a1a] text-[#f4ebd0] py-2 flex items-center relative overflow-hidden mb-8">
+                <div className="bg-[#cc2b1d] px-4 py-2 font-black uppercase text-sm z-10 shrink-0 border-r-4 border-[#1a1a1a]">
+                  СЕГОДНЯ В ЖК
+                </div>
+                <div className="ticker-wrap flex-1 px-4">
+                  <div className="ticker-content text-xs font-bold uppercase tracking-wider">
+                    {LOBBY_FLAVOR_TEXTS[flavorIdx]}
+                  </div>
+                </div>
               </div>
             </div>
-            <div style={{ fontSize: 14, color: '#FFD700', flexShrink: 0 }}>→</div>
-          </button>
+          )}
+        </main>
 
-          {/* §1.4 "Сегодня в ЖК" */}
-          <div style={{
-            width: '100%', maxWidth: 380,
-            marginTop: 16, marginBottom: 8,
-            background: 'rgba(255,87,34,0.08)',
-            border: '1px solid rgba(255,87,34,0.25)',
-            borderRadius: 10, padding: '8px 14px',
-          }}>
-            <div style={{ fontSize: 9, color: '#FF5722', letterSpacing: 1, marginBottom: 4, fontWeight: 'bold' }}>
-              📰 СЕГОДНЯ В ЖК
-            </div>
-            <div style={{ fontSize: 11, color: '#BDBDBD', lineHeight: 1.5 }}>
-              {LOBBY_FLAVOR_TEXTS[flavorIdx]}
-            </div>
+        <footer className="w-full px-4 text-center mt-auto pb-8 z-10">
+          <div className="border-t-4 border-[#1a1a1a] pt-4 flex flex-col items-center">
+            <div className="w-16 h-4 bg-[#cc2b1d] border-2 border-[#1a1a1a] mb-2 skew-x-12"></div>
+            <p className="text-[10px] font-black uppercase tracking-widest opacity-60">
+              ЖК «ЦВЕТОЧНЫЕ ПОЛЯНЫ» © 2026<br/>
+              @bakstab_bot
+            </p>
           </div>
-        </>
-      )}
+        </footer>
 
-      <div style={{ marginTop: 8, fontSize: 10, color: '#424242', textAlign: 'center' }}>
-        ЖК «Цветочные Поляны», 2026 • @bakstab_bot
       </div>
     </div>
   );

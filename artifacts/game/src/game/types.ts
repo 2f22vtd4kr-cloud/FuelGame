@@ -21,6 +21,8 @@ export type CharacterKey =
 export interface CharacterDef {
   key: CharacterKey;
   name: string;
+  /** Short, unambiguous label for tight UI (roster grid cells). Falls back to first word of `name` if omitted. */
+  shortName?: string;
   emoji: string;
   color: string;
   description: string;

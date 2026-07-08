@@ -4,9 +4,10 @@ export const CHARACTERS: Record<CharacterKey, CharacterDef> = {
   denis: {
     key: 'denis',
     name: 'Денис',
+    shortName: 'Денис',
     emoji: '🧑',
     color: '#E53935',
-    description: 'Водитель Яндекс Такси. Смена горит.',
+    description: 'Водитель Яндекс Такси. Всегда куда-то торопится.',
     voiceLines: [
       'Смена горит.',
       'Яндекс жмёт по 25%.',
@@ -23,9 +24,10 @@ export const CHARACTERS: Record<CharacterKey, CharacterDef> = {
   anya: {
     key: 'anya',
     name: 'Аня',
+    shortName: 'Аня',
     emoji: '👩',
     color: '#8E24AA',
-    description: 'Каршерингист. «Это не моя тачка».',
+    description: 'Заядлая каршерингистка. Боится ответственности.',
     voiceLines: [
       'Это не моя тачка.',
       'Каршеринг всё покроет.',
@@ -42,6 +44,7 @@ export const CHARACTERS: Record<CharacterKey, CharacterDef> = {
   vova: {
     key: 'vova',
     name: 'Вова Крипто',
+    shortName: 'Вова',
     emoji: '🤑',
     color: '#F4511E',
     description: 'Трейдер USDT. Всё переводит в крипту.',
@@ -61,6 +64,7 @@ export const CHARACTERS: Record<CharacterKey, CharacterDef> = {
   uncle_seryozha: {
     key: 'uncle_seryozha',
     name: 'Дядя Серёжа',
+    shortName: 'Серёжа',
     emoji: '👴',
     color: '#7B1FA2',
     description: 'Пенсионер. У него талоны по 52₽.',
@@ -80,6 +84,7 @@ export const CHARACTERS: Record<CharacterKey, CharacterDef> = {
   petrovich: {
     key: 'petrovich',
     name: 'Петрович',
+    shortName: 'Петрович',
     emoji: '🔧',
     color: '#1565C0',
     description: 'Механик. Чинит всем машины. Бесплатно. Подозрительно.',
@@ -99,6 +104,7 @@ export const CHARACTERS: Record<CharacterKey, CharacterDef> = {
   marina: {
     key: 'marina',
     name: 'Марина Блогерша',
+    shortName: 'Марина',
     emoji: '📱',
     color: '#E91E63',
     description: '240k подписчиков в TikTok. Снимает всё.',
@@ -118,6 +124,7 @@ export const CHARACTERS: Record<CharacterKey, CharacterDef> = {
   akhmet: {
     key: 'akhmet',
     name: 'Ахмет Дворник',
+    shortName: 'Ахмет',
     emoji: '🧹',
     color: '#FF8F00',
     description: 'Дворник. Видит всё. Говорит мало.',
@@ -137,6 +144,7 @@ export const CHARACTERS: Record<CharacterKey, CharacterDef> = {
   oleg: {
     key: 'oleg',
     name: 'Олег Силовик',
+    shortName: 'Олег',
     emoji: '🕵️',
     color: '#212121',
     description: 'Охранник. Подозревает всех профессионально.',
@@ -156,6 +164,7 @@ export const CHARACTERS: Record<CharacterKey, CharacterDef> = {
   lena: {
     key: 'lena',
     name: 'Лена Эко',
+    shortName: 'Лена',
     emoji: '🚲',
     color: '#33691E',
     description: 'Эко-активистка на велосипеде. Такси берёт на дачу.',
@@ -175,6 +184,7 @@ export const CHARACTERS: Record<CharacterKey, CharacterDef> = {
   barsik: {
     key: 'barsik',
     name: 'Барсик',
+    shortName: 'Барсик',
     emoji: '🐱',
     color: '#FF7043',
     description: 'Рыжий кот. Живёт во дворе. Видит всё.',
