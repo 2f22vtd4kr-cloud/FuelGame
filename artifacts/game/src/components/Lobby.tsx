@@ -313,7 +313,8 @@ export default function Lobby({ onStart, onMultiplayer }: Props) {
                       onChange={e => {
                         const n = +e.target.value;
                         setPlayerCount(n);
-                        if (siphonersCount >= n - 1) setSiphonersCount(Math.max(1, n - 2));
+                        const newMax = Math.floor((n - 1) / 2);
+                        setSiphonersCount(prev => Math.min(Math.max(1, prev), newMax));
                       }}
                     />
                   </div>

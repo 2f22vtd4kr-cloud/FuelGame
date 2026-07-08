@@ -187,40 +187,47 @@ export default function MeetingScreen({ state }: MeetingScreenProps) {
 
   const caller = state.players.find(p => p.id === meeting.callerId);
 
+  // Propaganda design tokens
+  const P_RED = '#cc2b1d';
+  const P_MUSTARD = '#e5a50a';
+  const P_CREAM = '#f4ebd0';
+  const P_BLACK = '#1a1a1a';
+
   return (
     <div style={{
       position: 'absolute', inset: 0,
-      background: 'linear-gradient(180deg, #0D0D1A 0%, #1A0A28 100%)',
+      background: P_BLACK,
       display: 'flex', flexDirection: 'column',
-      fontFamily: '"Segoe UI", Arial, sans-serif',
-      color: '#fff', zIndex: 20, overflow: 'hidden',
+      fontFamily: 'Oswald, sans-serif',
+      color: P_CREAM, zIndex: 20, overflow: 'hidden',
     }}>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div style={{
-        padding: '16px 20px 12px',
-        background: 'rgba(0,0,0,0.5)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        padding: '10px 16px',
+        background: P_RED,
+        borderBottom: `4px solid ${P_BLACK}`,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 'bold' }}>
+          <div style={{ fontSize: 16, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
             {MEETING_REASON_TEXT[meeting.reason] ?? t('meeting_title', state.language)}
           </div>
-          <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 1, fontWeight: 700 }}>
             {caller?.name} созвал(а) собрание
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{
-            fontSize: 24, fontWeight: 'bold',
-            color: meeting.timer < 10 ? '#FF5252' : '#FFD700',
+            fontSize: 28, fontWeight: 900,
+            color: meeting.timer < 10 ? P_MUSTARD : '#fff',
+            textShadow: meeting.timer < 10 ? `0 0 10px ${P_MUSTARD}` : 'none',
           }}>
             {Math.ceil(meeting.timer)}с
           </div>
           <div style={{
-            fontSize: 10, color: '#aaa',
-            textTransform: 'uppercase', letterSpacing: 1,
+            fontSize: 9, color: 'rgba(255,255,255,0.7)',
+            textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700,
           }}>
             {meeting.phase === 'discussion' ? 'Обсуждение' :
              meeting.phase === 'voting' ? 'Голосование' : 'Итог'}

@@ -1,10 +1,15 @@
 import React, { useRef, useState, useEffect } from 'react';
 import type { GameState, Player } from '../game/types';
 import { CHARACTERS } from '../data/characters';
-import { HAT_MAP } from '../data/cosmetics';
 import { applyMatchRewards, unlockAchievementNow, type MatchRewards } from '../game/rewards';
 import { loadProfile } from '../game/profile';
 import { t } from '../i18n/strings';
+
+// ── Propaganda design tokens ──────────────────────────────────────────────────
+const P_RED     = '#cc2b1d';
+const P_MUSTARD = '#e5a50a';
+const P_CREAM   = '#f4ebd0';
+const P_BLACK   = '#1a1a1a';
 
 interface Props {
   gs: GameState;
@@ -52,6 +57,33 @@ function getMatchTitle(
   }
 }
 
+// ── Propaganda stat card ─────────────────────────────────────────────────────
+function StatCard({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <div style={{
+      background: '#fff', border: `3px solid ${P_BLACK}`,
+      boxShadow: `3px 3px 0 ${accent ?? P_BLACK}`,
+      padding: '8px 10px',
+    }}>
+      <div style={{ fontSize: 18, fontWeight: 900, color: accent ?? P_RED, fontFamily: 'Oswald, sans-serif', lineHeight: 1 }}>
+        {value}
+      </div>
+      <div style={{ fontSize: 9, fontWeight: 700, color: P_BLACK, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2 }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function RewardStat({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: 20, fontWeight: 900, color, fontFamily: 'Oswald, sans-serif' }}>{value}</div>
+      <div style={{ fontSize: 9, color: P_BLACK, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 }}>{label}</div>
+    </div>
+  );
+}
+
 export default function GameResults({ gs, onPlayAgain }: Props) {
   const localPlayer = gs.players.find(p => p.id === gs.localPlayerId);
   const myRole = localPlayer?.role ?? 'khozain';
@@ -78,18 +110,16 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
 
   const profile = loadProfile();
 
-  // ── §3.3 Battle pass progress bar ─────────────────────────────────────────
   const XP_PER_TIER = 500;
   const xpInTier = profile.battlePassXP % XP_PER_TIER;
   const tierPct = Math.round((xpInTier / XP_PER_TIER) * 100);
 
-  // ── §9.1 Share card generation ─────────────────────────────────────────────
+  // ── §9.1 Share card ────────────────────────────────────────────────────────
   function generateShareCard() {
     const canvas = document.createElement('canvas');
     canvas.width = 1080; canvas.height = 1080;
     const ctx = canvas.getContext('2d')!;
 
-    // Background gradient
     const grad = ctx.createLinearGradient(0, 0, 0, 1080);
     grad.addColorStop(0, iWon ? '#1B5E20' : '#B71C1C');
     grad.addColorStop(1, '#0A0A0A');
@@ -171,509 +201,320 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
     link.href = canvas.toDataURL('image/png');
     link.click();
 
-    // §3.6 "Вирусный Момент" achievement
     unlockAchievementNow('share_card');
   }
+
+  const fmtTime = `${Math.floor(aliveTime / 60)}:${(aliveTime % 60).toString().padStart(2, '0')}`;
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 60,
-      background: iWon
-        ? 'linear-gradient(180deg, #1B5E20 0%, #0A0A0A 100%)'
-        : 'linear-gradient(180deg, #B71C1C 0%, #0A0A0A 100%)',
+      background: P_CREAM,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      overflowY: 'auto', fontFamily: 'sans-serif', padding: '24px 16px',
+      overflowY: 'auto', fontFamily: 'Oswald, sans-serif',
     }}>
-      {/* Result headline */}
-      <div style={{ fontSize: 56, marginBottom: 6 }}>
-        {iWon ? '🏆' : '💀'}
-      </div>
+      {/* ── Hero banner ── */}
       <div style={{
-        fontSize: 26, fontWeight: 'bold', color: '#FFF',
-        letterSpacing: 2, textAlign: 'center', marginBottom: 4,
+        width: '100%',
+        background: iWon ? P_MUSTARD : P_RED,
+        borderBottom: `8px solid ${P_BLACK}`,
+        padding: '24px 16px 20px',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
-        {iWon ? t('result_win', gs.language) : t('result_lose', gs.language)}
-      </div>
-
-      {/* §9.1 Per-match title */}
-      <div style={{
-        fontSize: 18, fontWeight: 'bold',
-        color: iWon ? '#FFD700' : '#FF8A80',
-        textAlign: 'center', marginBottom: 4,
-        letterSpacing: 1,
-        textShadow: iWon ? '0 0 16px rgba(255,215,0,0.5)' : '0 0 16px rgba(255,100,50,0.4)',
-      }}>
-        {matchTitle}
-      </div>
-
-      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', textAlign: 'center', marginBottom: 4 }}>
-        {gs.winner === 'khozaeva' ? '🏠 Хозяева победили' : '🪣 Сливщики победили'}
-      </div>
-      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: 20, fontStyle: 'italic' }}>
-        {gs.winReason}
-      </div>
-
-      {/* ── §3.2/§3.3 Rewards panel ── */}
-      {rewards && (
+        {/* Diagonal accent */}
         <div style={{
-          width: '100%', maxWidth: 340,
-          background: 'rgba(255,215,0,0.1)',
-          border: '1.5px solid rgba(255,215,0,0.35)',
-          borderRadius: 14, padding: '14px 16px', marginBottom: 16,
+          position: 'absolute', inset: 0,
+          background: `repeating-linear-gradient(135deg, transparent, transparent 12px, rgba(0,0,0,0.06) 12px, rgba(0,0,0,0.06) 14px)`,
+          pointerEvents: 'none',
+        }} />
+        <div style={{ fontSize: 52, marginBottom: 4 }}>{iWon ? '🏆' : '💀'}</div>
+        <div style={{
+          fontSize: 36, fontWeight: 900, color: iWon ? P_BLACK : P_CREAM,
+          letterSpacing: 2, textTransform: 'uppercase',
+          textShadow: iWon ? `3px 3px 0 ${P_RED}` : `3px 3px 0 ${P_BLACK}`,
         }}>
-          <div style={{ fontSize: 11, color: '#FFD700', marginBottom: 10, letterSpacing: 1, textAlign: 'center' }}>
-            💰 НАГРАДЫ ЗА МАТЧ
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <RewardStat label="Бабки" value={`+${rewards.babkiEarned}`} color="#FFD700" />
-            <RewardStat label="Опыт BP" value={`+${rewards.xpEarned} XP`} color="#64B5F6" />
-          </div>
-
-          {/* Battle Pass progress */}
-          <div style={{ marginTop: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontSize: 10, color: '#9E9E9E' }}>Боевой Пропуск — Ур. {profile.battlePassTier}</span>
-              <span style={{ fontSize: 10, color: '#64B5F6' }}>{tierPct}%</span>
-            </div>
-            <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', borderRadius: 3,
-                background: 'linear-gradient(90deg, #1565C0, #64B5F6)',
-                width: `${tierPct}%`,
-                transition: 'width 1s ease',
-              }} />
-            </div>
-            {rewards.tiersAfter > rewards.tiersBefore && (
-              <div style={{ fontSize: 11, color: '#FFD700', textAlign: 'center', marginTop: 6, fontWeight: 'bold' }}>
-                🎉 Уровень {rewards.tiersAfter}!
-              </div>
-            )}
-          </div>
-
-          {/* Babki balance */}
-          <div style={{ marginTop: 10, textAlign: 'center', fontSize: 12, color: '#9E9E9E' }}>
-            Баланс: <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{profile.babki} 💰</span>
-          </div>
+          {iWon ? t('result_win', gs.language) : t('result_lose', gs.language)}
         </div>
-      )}
-
-      {/* ── §3.5 Daily challenge progress ── */}
-      {rewards?.dailyDef && (
         <div style={{
-          width: '100%', maxWidth: 340,
-          background: rewards.dailyCompleted ? 'rgba(76,175,80,0.15)' : 'rgba(255,255,255,0.05)',
-          border: `1.5px solid ${rewards.dailyCompleted ? 'rgba(76,175,80,0.5)' : 'rgba(255,255,255,0.12)'}`,
-          borderRadius: 14, padding: '12px 16px', marginBottom: 16,
+          display: 'inline-block',
+          marginTop: 8, padding: '4px 14px',
+          background: P_BLACK, color: iWon ? P_MUSTARD : P_CREAM,
+          fontSize: 14, fontWeight: 900, textTransform: 'uppercase',
+          letterSpacing: 1, boxShadow: `3px 3px 0 ${iWon ? P_RED : P_MUSTARD}`,
         }}>
-          <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 6, letterSpacing: 1 }}>
-            ☀️ ЕЖЕДНЕВНОЕ ЗАДАНИЕ
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <div style={{ fontSize: 13, color: '#FFF' }}>
-              {rewards.dailyDef.emoji} {rewards.dailyDef.label}
-            </div>
-            <div style={{ fontSize: 12, color: rewards.dailyCompleted ? '#4CAF50' : '#FFD700', fontWeight: 'bold', flexShrink: 0 }}>
-              {rewards.dailyCompleted ? '✅ +200' : `${rewards.dailyProgress}/${rewards.dailyTarget}`}
-            </div>
-          </div>
+          {matchTitle}
         </div>
-      )}
+        <div style={{ fontSize: 12, color: iWon ? P_BLACK : 'rgba(255,255,255,0.8)', marginTop: 8, fontWeight: 700, textTransform: 'uppercase' }}>
+          {gs.winReason}
+        </div>
+      </div>
 
-      {/* ── §3.6 Newly unlocked achievements ── */}
-      {rewards && rewards.newAchievements.length > 0 && (
-        <div style={{
-          width: '100%', maxWidth: 340,
-          background: 'rgba(255,255,255,0.05)',
-          borderRadius: 14, padding: '12px 16px', marginBottom: 16,
-        }}>
-          <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 8, letterSpacing: 1 }}>
-            🏅 НОВЫЕ ДОСТИЖЕНИЯ
-          </div>
-          {rewards.newAchievements.map(ach => (
-            <div key={ach.id} style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '6px 0',
-              borderBottom: '1px solid rgba(255,255,255,0.05)',
+      <div style={{ width: '100%', maxWidth: 420, padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* ── §3.2/§3.3 Rewards panel ── */}
+        {rewards && (
+          <div style={{
+            background: '#fff',
+            border: `4px solid ${P_BLACK}`,
+            boxShadow: `6px 6px 0 ${P_MUSTARD}`,
+          }}>
+            <div style={{
+              background: P_BLACK, color: P_MUSTARD,
+              padding: '6px 12px', fontSize: 11, fontWeight: 900,
+              textTransform: 'uppercase', letterSpacing: 1,
             }}>
-              <div style={{ fontSize: 24, flexShrink: 0 }}>{ach.emoji}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 'bold', color: '#FFD700' }}>{ach.title}</div>
-                <div style={{ fontSize: 10, color: '#9E9E9E' }}>{ach.description}</div>
-              </div>
-              <div style={{ fontSize: 11, color: '#FFD700', fontWeight: 'bold', flexShrink: 0 }}>
-                +{ach.babkiReward}
-              </div>
+              💰 НАГРАДЫ ЗА МАТЧ
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Match stats */}
-      <div style={{
-        width: '100%', maxWidth: 340,
-        background: 'rgba(255,255,255,0.08)', borderRadius: 14,
-        padding: '14px 16px', marginBottom: 16,
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12,
-      }}>
-        <Stat label="Время игры" value={`${Math.floor(aliveTime / 60)}:${(aliveTime % 60).toString().padStart(2, '0')}`} />
-        <Stat label="Единство" value={`${Math.round(gs.unityMeter)}%`} />
-        <Stat label="Задач выполнено" value={`${totalTasksDone}`} />
-        <Stat label="Топлива слито" value={`${Math.round(totalFuelStolen)}%`} />
-      </div>
-
-      {/* §9.1 Per-player breakdown */}
-      <div style={{
-        width: '100%', maxWidth: 340,
-        background: 'rgba(255,255,255,0.05)', borderRadius: 14,
-        padding: '12px 14px', marginBottom: 16,
-      }}>
-        <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 10, textAlign: 'center', letterSpacing: 1 }}>
-          СТАТИСТИКА ИГРОКОВ
-        </div>
-        {gs.players.map(p => {
-          const charDef = CHARACTERS[p.character];
-          const isSlivy = p.role === 'slivshchik';
-          const isMe = p.id === gs.localPlayerId;
-          return (
-            <div key={p.id} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '5px 0',
-              borderBottom: '1px solid rgba(255,255,255,0.05)',
-              opacity: p.isAlive ? 1 : 0.6,
-            }}>
-              <div style={{
-                width: 24, height: 24, borderRadius: '50%',
-                background: charDef.color,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, flexShrink: 0,
-                border: isMe ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.2)',
-              }}>
-                {charDef.emoji}
+            <div style={{ padding: '12px 14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 12 }}>
+                <RewardStat label="Бабки" value={`+${rewards.babkiEarned}`} color={P_RED} />
+                <RewardStat label="Опыт BP" value={`+${rewards.xpEarned} XP`} color="#1565C0" />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{
-                  fontSize: 11, fontWeight: isMe ? 'bold' : 'normal',
-                  color: isMe ? '#FFD700' : '#ddd',
-                }}>
-                  {p.name} {isSlivy ? '🪣' : '🏠'}
-                  {p.neutralRole === 'barsik' ? '😺' : p.neutralRole === 'policeman' ? '🕵️' : p.neutralRole === 'janitor' ? '🧹' : ''}
-                  {!p.isAlive && ' 💀'}
+
+              {/* BP bar */}
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Боевой Пропуск — Ур. {profile.battlePassTier}
+                  </span>
+                  <span style={{ fontSize: 9, color: '#1565C0', fontWeight: 900 }}>{tierPct}%</span>
                 </div>
-              </div>
-              <div style={{ textAlign: 'right', fontSize: 9, color: '#999', lineHeight: 1.5 }}>
-                {isSlivy
-                  ? <span style={{ color: '#EF9A9A' }}>⛽{Math.round(p.fuelSiphoned)}%</span>
-                  : <span style={{ color: '#A5D6A7' }}>✅{p.tasksCompleted}</span>
-                }
-                {isMe && p.correctVotes > 0 && (
-                  <><br/><span style={{ color: '#64B5F6' }}>🗳️{p.correctVotes}</span></>
+                <div style={{ height: 10, background: P_BLACK, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', width: `${tierPct}%`,
+                    background: `linear-gradient(90deg, ${P_RED}, ${P_MUSTARD})`,
+                    transition: 'width 1s ease',
+                  }} />
+                </div>
+                {rewards.tiersAfter > rewards.tiersBefore && (
+                  <div style={{ fontSize: 11, color: P_RED, textAlign: 'center', marginTop: 6, fontWeight: 900, textTransform: 'uppercase' }}>
+                    🎉 Уровень {rewards.tiersAfter}!
+                  </div>
                 )}
               </div>
+
+              <div style={{ textAlign: 'center', fontSize: 11, color: '#666', fontWeight: 700 }}>
+                Баланс: <span style={{ color: P_RED, fontWeight: 900 }}>{profile.babki} 💰</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── §3.5 Daily challenge ── */}
+        {rewards?.dailyDef && (
+          <div style={{
+            background: rewards.dailyCompleted ? P_MUSTARD : '#fff',
+            border: `4px solid ${P_BLACK}`,
+            boxShadow: `4px 4px 0 ${rewards.dailyCompleted ? P_RED : P_BLACK}`,
+          }}>
+            <div style={{
+              background: P_BLACK, color: P_CREAM,
+              padding: '6px 12px', fontSize: 10, fontWeight: 900,
+              textTransform: 'uppercase', letterSpacing: 1,
+            }}>
+              ☀️ ЕЖЕДНЕВНОЕ ЗАДАНИЕ
+            </div>
+            <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <div style={{ fontSize: 12, color: P_BLACK, fontWeight: 700 }}>
+                {rewards.dailyDef.emoji} {rewards.dailyDef.label}
+              </div>
+              <div style={{ fontSize: 14, color: rewards.dailyCompleted ? P_BLACK : P_RED, fontWeight: 900, flexShrink: 0 }}>
+                {rewards.dailyCompleted ? '✅ +200' : `${rewards.dailyProgress}/${rewards.dailyTarget}`}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── §3.6 New achievements ── */}
+        {rewards && rewards.newAchievements.length > 0 && (
+          <div style={{
+            background: '#fff', border: `4px solid ${P_BLACK}`, boxShadow: `4px 4px 0 ${P_MUSTARD}`,
+          }}>
+            <div style={{
+              background: P_MUSTARD, color: P_BLACK,
+              padding: '6px 12px', fontSize: 10, fontWeight: 900,
+              textTransform: 'uppercase', letterSpacing: 1,
+            }}>
+              🏅 НОВЫЕ ДОСТИЖЕНИЯ
+            </div>
+            <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {rewards.newAchievements.map(ach => (
+                <div key={ach.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '6px 0', borderBottom: `1px solid ${P_BLACK}22`,
+                }}>
+                  <div style={{ fontSize: 22, flexShrink: 0 }}>{ach.emoji}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, fontWeight: 900, color: P_BLACK, textTransform: 'uppercase' }}>{ach.title}</div>
+                    <div style={{ fontSize: 9, color: '#666', fontWeight: 700 }}>{ach.description}</div>
+                  </div>
+                  <div style={{ fontSize: 12, color: P_RED, fontWeight: 900, flexShrink: 0 }}>+{ach.babkiReward}💰</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Match stats ── */}
+        <div>
+          <div style={{
+            background: P_BLACK, color: P_CREAM,
+            padding: '6px 12px', fontSize: 10, fontWeight: 900,
+            textTransform: 'uppercase', letterSpacing: 1,
+            borderBottom: 'none',
+          }}>
+            📊 СТАТИСТИКА МАТЧА
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, background: P_BLACK }}>
+            <StatCard label="Время игры" value={fmtTime} accent={P_RED} />
+            <StatCard label="Единство" value={`${Math.round(gs.unityMeter)}%`} accent={P_MUSTARD} />
+            <StatCard label="Задач" value={`${totalTasksDone}`} accent="#4CAF50" />
+            <StatCard label="Слито топлива" value={`${Math.round(totalFuelStolen)}%`} accent={P_RED} />
+          </div>
+        </div>
+
+        {/* ── Per-player breakdown ── */}
+        <div style={{ background: '#fff', border: `4px solid ${P_BLACK}`, boxShadow: `4px 4px 0 ${P_BLACK}` }}>
+          <div style={{
+            background: P_BLACK, color: P_CREAM,
+            padding: '6px 12px', fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1,
+          }}>
+            ИГРОКИ
+          </div>
+          <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {gs.players.map(p => {
+              const charDef = CHARACTERS[p.character];
+              const isSlivy = p.role === 'slivshchik';
+              const isMe = p.id === gs.localPlayerId;
+              return (
+                <div key={p.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '6px 0', borderBottom: `1px solid ${P_BLACK}18`,
+                  opacity: p.isAlive ? 1 : 0.55,
+                }}>
+                  <div style={{
+                    width: 26, height: 26, borderRadius: '50%', background: charDef.color,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12,
+                    border: isMe ? `2px solid ${P_MUSTARD}` : `1px solid ${P_BLACK}`,
+                    flexShrink: 0,
+                  }}>
+                    {charDef.emoji}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, fontWeight: isMe ? 900 : 700, color: isMe ? P_RED : P_BLACK, textTransform: 'uppercase' }}>
+                      {p.name} {isSlivy ? '🪣' : '🏠'}
+                      {p.neutralRole === 'barsik' ? '😺' : p.neutralRole === 'policeman' ? '🕵️' : p.neutralRole === 'janitor' ? '🧹' : ''}
+                      {!p.isAlive && ' 💀'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', fontSize: 10, fontWeight: 900, color: isSlivy ? P_RED : '#2e7d32' }}>
+                    {isSlivy ? `⛽${Math.round(p.fuelSiphoned)}%` : `✅${p.tasksCompleted}`}
+                    {isMe && p.correctVotes > 0 && <><br/><span style={{ color: '#1565C0' }}>🗳️{p.correctVotes}</span></>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Role reveal ── */}
+        <div style={{ background: '#fff', border: `4px solid ${P_BLACK}`, boxShadow: `4px 4px 0 ${P_RED}` }}>
+          <div style={{
+            background: P_RED, color: P_CREAM,
+            padding: '6px 12px', fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1,
+          }}>
+            🪣 СЛИВЩИКИ БЫЛИ:
+          </div>
+          <div style={{ padding: '12px', display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+            {slivshchiki.map(p => (
+              <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                <div style={{ fontSize: 28 }}>{CHARACTERS[p.character].emoji}</div>
+                <div style={{ fontSize: 10, color: P_RED, fontWeight: 900, textTransform: 'uppercase' }}>{p.name}</div>
+                <div style={{ fontSize: 9, color: '#666', fontWeight: 700 }}>{p.isAlive ? '(выжил)' : '(выброшен)'}</div>
+                <div style={{ fontSize: 9, color: P_RED, fontWeight: 700 }}>слито: {Math.round(p.fuelSiphoned)}%</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── CTA: viral / share ── */}
+        {(() => {
+          const tg = (window as any).Telegram?.WebApp;
+          const shareUrl = `https://t.me/bakstab_bot?startapp=invite_${loadProfile().deviceId}`;
+          const shareText = iWon
+            ? `🏆 Вычислил сливщика! АИ-95 в безопасности. Играй: 95-Й Бакстаб`
+            : `🪣 Меня поймали на сливе! Попробуй сам: 95-Й Бакстаб`;
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                onClick={() => {
+                  if (tg?.openTelegramLink) tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
+                  else if (navigator.share) navigator.share({ text: shareText, url: shareUrl });
+                  else generateShareCard();
+                }}
+                style={{
+                  width: '100%', padding: '14px',
+                  background: P_MUSTARD, border: `4px solid ${P_BLACK}`,
+                  boxShadow: `6px 6px 0 ${P_BLACK}`,
+                  fontSize: 15, fontWeight: 900, color: P_BLACK,
+                  cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1,
+                  fontFamily: 'Oswald, sans-serif',
+                }}
+              >
+                📣 Поделиться результатом
+              </button>
+              <button
+                onClick={generateShareCard}
+                style={{
+                  width: '100%', padding: '10px',
+                  background: '#fff', border: `3px solid ${P_BLACK}`,
+                  boxShadow: `3px 3px 0 ${P_BLACK}`,
+                  fontSize: 12, fontWeight: 900, color: P_BLACK,
+                  cursor: 'pointer', textTransform: 'uppercase',
+                  fontFamily: 'Oswald, sans-serif',
+                }}
+              >
+                💾 Скачать карточку
+              </button>
+              <button
+                onClick={() => {
+                  if (tg?.openTelegramLink) tg.openTelegramLink('https://t.me/fuel_fuel_fuel_bot');
+                  else window.open('https://t.me/fuel_fuel_fuel_bot', '_blank');
+                }}
+                style={{
+                  width: '100%', padding: '10px',
+                  background: '#fff', border: `3px solid ${P_BLACK}`,
+                  boxShadow: `3px 3px 0 ${P_MUSTARD}`,
+                  fontSize: 12, fontWeight: 900, color: P_BLACK,
+                  cursor: 'pointer', textTransform: 'uppercase',
+                  fontFamily: 'Oswald, sans-serif',
+                }}
+              >
+                ⛽ Получить талоны на АИ-95 → @fuel_fuel_fuel_bot
+              </button>
             </div>
           );
-        })}
-      </div>
+        })()}
 
-      {/* Role reveal */}
-      <div style={{
-        width: '100%', maxWidth: 340,
-        background: 'rgba(255,255,255,0.05)', borderRadius: 14,
-        padding: '14px 16px', marginBottom: 16,
-      }}>
-        <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 10, textAlign: 'center' }}>
-          СЛИВЩИКИ БЫЛИ:
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-          {slivshchiki.map(p => (
-            <div key={p.id} style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-            }}>
-              <div style={{ fontSize: 28 }}>{CHARACTERS[p.character].emoji}</div>
-              <div style={{ fontSize: 10, color: '#EF5350', fontWeight: 'bold' }}>
-                {p.name}
-              </div>
-              <div style={{ fontSize: 9, color: '#9E9E9E' }}>
-                {p.isAlive ? '(выжил)' : '(выброшен)'}
-              </div>
-              <div style={{ fontSize: 9, color: '#FF8A80' }}>
-                слито: {Math.round(p.fuelSiphoned)}%
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div style={{
-        width: '100%', maxWidth: 340,
-        background: iWon
-          ? 'rgba(76,175,80,0.15)'
-          : 'rgba(244,67,54,0.15)',
-        border: `1.5px solid ${iWon ? 'rgba(76,175,80,0.4)' : 'rgba(244,67,54,0.4)'}`,
-        borderRadius: 14, padding: '14px 16px', marginBottom: 16, textAlign: 'center',
-      }}>
-        <div style={{ fontSize: 12, color: '#FFF', lineHeight: 1.5, marginBottom: 6, whiteSpace: 'pre-line' }}>
-          {iWon
-            ? '🛡️ Вы защитили двор! А в реальности?\nАИ-95 уже 87₽. Зафиксируй цену на 3 месяца:'
-            : '⛽ Ваш бак пуст. Не будь жертвой сифонеров — купи талоны по старой цене:'}
-        </div>
+        {/* ── Play Again ── */}
         <button
-          onClick={() => {
-            const tg = (window as any).Telegram?.WebApp;
-            if (tg?.openTelegramLink) {
-              tg.openTelegramLink('https://t.me/fuel_fuel_fuel_bot');
-            } else {
-              window.open('https://t.me/fuel_fuel_fuel_bot', '_blank');
-            }
-          }}
+          onClick={onPlayAgain}
           style={{
-            width: '100%', padding: '8px 12px',
-            background: 'rgba(255,193,7,0.15)',
-            border: '1.5px solid rgba(255,193,7,0.5)',
-            borderRadius: 10, cursor: 'pointer',
-            fontSize: 14, fontWeight: 'bold', color: '#FFD700',
-            fontFamily: 'monospace', letterSpacing: 1,
-            marginTop: 4,
+            width: '100%', padding: '18px',
+            background: P_RED, border: `4px solid ${P_BLACK}`,
+            boxShadow: `8px 8px 0 ${P_BLACK}`,
+            fontSize: 20, fontWeight: 900, color: P_CREAM,
+            cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 2,
+            fontFamily: 'Oswald, sans-serif',
+            marginBottom: 32,
           }}
         >
-          → @fuel_fuel_fuel_bot
+          🎮 {t('result_play_again', gs.language)}
         </button>
+
       </div>
-
-      {/* ── §9.4 First-win share prompt ── */}
-      {rewards?.isFirstWin && (
-        <div style={{
-          width: '100%', maxWidth: 340,
-          background: 'rgba(255,215,0,0.12)',
-          border: '2px solid rgba(255,215,0,0.5)',
-          borderRadius: 14, padding: '14px 16px', marginBottom: 16,
-          textAlign: 'center',
-          boxShadow: '0 0 30px rgba(255,215,0,0.15)',
-        }}>
-          <div style={{ fontSize: 28, marginBottom: 6 }}>🏆</div>
-          <div style={{ fontSize: 15, fontWeight: 900, color: '#FFD700', marginBottom: 6 }}>
-            Твоя первая победа!
-          </div>
-          <div style={{ fontSize: 12, color: '#ccc', marginBottom: 12 }}>
-            Расскажи друзьям — пусть тоже попробуют!
-          </div>
-          <button
-            onClick={() => {
-              const text = `🏆 Я победил в 95-Й Бакстаб! Это игра про соседей, которые сливают бензин 😂 Попробуй: t.me/bakstab_bot`;
-              const tg = (window as any).Telegram?.WebApp;
-              if (tg?.openTelegramLink) {
-                tg.openTelegramLink(
-                  `https://t.me/share/url?url=https://t.me/bakstab_bot&text=${encodeURIComponent(text)}`
-                );
-              } else {
-                window.open(`https://t.me/share/url?url=https://t.me/bakstab_bot&text=${encodeURIComponent(text)}`, '_blank');
-              }
-            }}
-            style={{
-              width: '100%', padding: '10px',
-              background: 'linear-gradient(135deg, #FFD700, #FFC107)',
-              border: 'none', borderRadius: 10,
-              fontSize: 13, fontWeight: 700, color: '#000',
-              cursor: 'pointer',
-            }}
-          >
-            📢 Поделиться в Telegram
-          </button>
-        </div>
-      )}
-
-      {/* ── §9.4 Daily challenge share + hat unlock ── */}
-      {rewards?.dailyCompleted && (
-        <div style={{
-          width: '100%', maxWidth: 340,
-          background: 'rgba(76,175,80,0.12)',
-          border: '1.5px solid rgba(76,175,80,0.4)',
-          borderRadius: 14, padding: '14px 16px', marginBottom: 16,
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 900, color: '#4CAF50', marginBottom: 6 }}>
-            ☀️ Ежедневное задание выполнено!
-          </div>
-          {rewards.dailyHatUnlocked && (
-            <div style={{ fontSize: 12, color: '#A5D6A7', marginBottom: 8 }}>
-              🎩 Новая шапка разблокирована!<br/>
-              <span style={{ fontSize: 20 }}>
-                {(() => {
-                  const hat = HAT_MAP[rewards.dailyHatUnlocked!];
-                  return hat ? `${hat.emoji} ${hat.name}` : rewards.dailyHatUnlocked;
-                })()}
-              </span>
-            </div>
-          )}
-          <button
-            onClick={() => {
-              const text = `☀️ Выполнил ежедневное задание в 95-Й Бакстаб! АИ-95 уже 87₽ 😂 Попробуй: t.me/bakstab_bot`;
-              const tg = (window as any).Telegram?.WebApp;
-              if (tg?.openTelegramLink) {
-                tg.openTelegramLink(
-                  `https://t.me/share/url?url=https://t.me/bakstab_bot&text=${encodeURIComponent(text)}`
-                );
-              } else {
-                window.open(`https://t.me/share/url?url=https://t.me/bakstab_bot&text=${encodeURIComponent(text)}`, '_blank');
-              }
-            }}
-            style={{
-              width: '100%', padding: '8px',
-              background: 'rgba(76,175,80,0.2)',
-              border: '1px solid rgba(76,175,80,0.4)',
-              borderRadius: 8, fontSize: 12, color: '#A5D6A7',
-              cursor: 'pointer', fontWeight: 600,
-            }}
-          >
-            📢 Поделиться результатом
-          </button>
-        </div>
-      )}
-
-      {/* §9.1 Share card button */}
-      <button
-        onClick={generateShareCard}
-        style={{
-          width: '100%', maxWidth: 340, marginBottom: 12,
-          padding: '12px',
-          background: 'rgba(255,215,0,0.15)',
-          border: '1.5px solid rgba(255,215,0,0.5)',
-          borderRadius: 14, fontSize: 13, fontWeight: 'bold',
-          color: '#FFD700', cursor: 'pointer',
-        }}
-      >
-        📸 Скачать карточку результата (PNG)
-      </button>
-
-      {/* Play again */}
-      <button
-        onClick={onPlayAgain}
-        style={{
-          width: '100%', maxWidth: 340,
-          padding: '16px',
-          background: 'linear-gradient(135deg, #FF5722, #FF8A65)',
-          border: 'none', borderRadius: 14,
-          fontSize: 16, fontWeight: 'bold', color: '#FFF',
-          cursor: 'pointer', letterSpacing: 1,
-          boxShadow: '0 4px 20px rgba(255,87,34,0.4)',
-          marginBottom: 12,
-        }}
-      >
-        🎮 СЫГРАТЬ ЕЩЁ
-      </button>
-
-      {/* §5.6 Anti-cheat: report suspicious player */}
-      <ReportButton gs={gs} />
-    </div>
-  );
-}
-
-// ─── §5.6 Report suspicious player ───────────────────────────────────────────
-
-function ReportButton({ gs }: { gs: GameState }) {
-  const [open, setOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState<string | null>(null);
-  const [sent, setSent] = React.useState(false);
-
-  const others = gs.players.filter(p => p.id !== gs.localPlayerId);
-  if (others.length === 0) return null;
-
-  function sendReport() {
-    if (!selected) return;
-    const target = others.find(p => p.id === selected);
-    if (!target) return;
-    // Fire-and-forget; server logs the report for manual review
-    const apiBase = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
-    fetch(`${apiBase}/api/report`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reportedName: target.name, reportedCharacter: target.character }),
-    }).catch(() => {/* no-op */});
-    setSent(true);
-    setTimeout(() => setOpen(false), 2000);
-  }
-
-  return (
-    <>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%', maxWidth: 340, marginBottom: 8,
-          padding: '10px',
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 10, fontSize: 12, color: '#9E9E9E',
-          cursor: 'pointer',
-        }}
-      >
-        🚩 Пожаловаться на игрока
-      </button>
-      {open && !sent && (
-        <div style={{
-          width: '100%', maxWidth: 340, marginBottom: 8,
-          background: '#17212B', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 10, padding: 12,
-        }}>
-          <div style={{ fontSize: 11, color: '#9E9E9E', marginBottom: 8 }}>
-            Выбери игрока для жалобы:
-          </div>
-          {others.map(p => (
-            <button
-              key={p.id}
-              onClick={() => setSelected(p.id)}
-              style={{
-                display: 'block', width: '100%', padding: '7px 10px',
-                marginBottom: 4, borderRadius: 7,
-                background: selected === p.id ? 'rgba(255,87,34,0.2)' : 'rgba(255,255,255,0.05)',
-                border: selected === p.id ? '1px solid #FF5722' : '1px solid rgba(255,255,255,0.08)',
-                color: '#fff', fontSize: 12, cursor: 'pointer', textAlign: 'left',
-              }}
-            >
-              {CHARACTERS[p.character]?.emoji ?? '👤'} {p.name}
-            </button>
-          ))}
-          <button
-            onClick={sendReport}
-            disabled={!selected}
-            style={{
-              marginTop: 8, width: '100%', padding: '8px',
-              background: selected ? 'rgba(255,87,34,0.3)' : 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,87,34,0.4)',
-              borderRadius: 7, fontSize: 12, color: selected ? '#FF8A65' : '#555',
-              cursor: selected ? 'pointer' : 'default', fontWeight: 600,
-            }}
-          >
-            Отправить жалобу
-          </button>
-        </div>
-      )}
-      {open && sent && (
-        <div style={{
-          width: '100%', maxWidth: 340, marginBottom: 8, padding: 10, textAlign: 'center',
-          background: 'rgba(76,175,80,0.1)', border: '1px solid rgba(76,175,80,0.3)',
-          borderRadius: 10, fontSize: 12, color: '#A5D6A7',
-        }}>
-          ✅ Жалоба отправлена. Спасибо за помощь!
-        </div>
-      )}
-    </>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 18, fontWeight: 'bold', color: '#FFF' }}>{value}</div>
-      <div style={{ fontSize: 9, color: '#9E9E9E', marginTop: 2 }}>{label}</div>
-    </div>
-  );
-}
-
-function RewardStat({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 20, fontWeight: 'bold', color }}>{value}</div>
-      <div style={{ fontSize: 9, color: '#9E9E9E', marginTop: 2 }}>{label}</div>
     </div>
   );
 }

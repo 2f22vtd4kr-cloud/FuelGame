@@ -1,4 +1,5 @@
 // §3.4 Cosmetics Shop Tab + §10.3 Telegram Stars purchase flow
+// Propaganda Pop visual design — black borders, cream/red/mustard palette
 import React, { useState } from 'react';
 import { HATS, PETS, CAR_SKINS, RARITY_COLORS, type HatDef, type PetDef, type CarSkinDef } from '../data/cosmetics';
 import { loadProfile, saveProfile, XP_PER_TIER } from '../game/profile';
@@ -23,6 +24,12 @@ declare global {
 type ShopSection = 'hats' | 'pets' | 'cars' | 'battlepass';
 
 const PREMIUM_PASS_COST_STARS = 150;
+
+// ── Propaganda design tokens ────────────────────────────────────────────────
+const P_RED    = '#cc2b1d';
+const P_MUSTARD= '#e5a50a';
+const P_CREAM  = '#f4ebd0';
+const P_BLACK  = '#1a1a1a';
 
 export default function ShopTab({ onProfileChange }: Props) {
   const [profile, setProfile] = useState(() => loadProfile());
@@ -166,7 +173,6 @@ export default function ShopTab({ onProfileChange }: Props) {
     };
 
     if (!tg?.openInvoice) {
-      // Dev/offline fallback so the flow is testable without Telegram
       onPaid();
       return;
     }
@@ -193,7 +199,7 @@ export default function ShopTab({ onProfileChange }: Props) {
     });
   }
 
-  // §3.6 "Талоновед" achievement stub — manual confirmation of @fuel_fuel_fuel_bot linking
+  // §3.6 "Талоновед" achievement stub
   function linkFuelBot() {
     const p = loadProfile();
     if (p.fuelBotLinked) return;
@@ -205,7 +211,6 @@ export default function ShopTab({ onProfileChange }: Props) {
     syncInventoryItem('hat', 'golden_talono', false);
     syncInventoryItem('car', 'golden_moskvich', false);
     syncInventoryItem('pet', 'barsik_pet', false);
-    // §3.6 "Талоновед" achievement grants its own +1000 babki reward — don't double-pay here.
     unlockAchievementNow('fuel_linked');
     refresh();
     showToast('Аккаунт привязан! Золотой Москвич и бонусы разблокированы 🥇', true);
@@ -246,7 +251,7 @@ export default function ShopTab({ onProfileChange }: Props) {
     return true;
   });
 
-  // ── Shared action button renderer ─────────────────────────────────────────────
+  // ── Propaganda action button ──────────────────────────────────────────────────
 
   function ActionButton({
     owned, equipped, currency, cost, onEquip, onBuyBabki, onBuyStars, babelKi,
@@ -254,346 +259,381 @@ export default function ShopTab({ onProfileChange }: Props) {
     owned: boolean; equipped: boolean; currency: string; cost: number;
     onEquip: () => void; onBuyBabki?: () => void; onBuyStars?: () => void; babelKi: number;
   }) {
+    const base: React.CSSProperties = {
+      marginTop: 6, padding: '5px 10px',
+      border: `2px solid ${P_BLACK}`,
+      fontSize: 9, fontWeight: 900, cursor: 'pointer',
+      letterSpacing: 0.5, textTransform: 'uppercase',
+      fontFamily: 'Oswald, sans-serif',
+      display: 'inline-block', width: '100%',
+    };
     if (equipped) return (
-      <div style={{
-        marginTop: 4, padding: '4px 10px',
-        background: 'rgba(255,87,34,0.3)', border: '1px solid rgba(255,87,34,0.5)',
-        borderRadius: 6, fontSize: 9, color: '#FF5722', fontWeight: 'bold',
-      }}>✓ Выбрано</div>
+      <div style={{ ...base, background: P_RED, color: P_CREAM, borderColor: P_BLACK, cursor: 'default', textAlign: 'center' }}>
+        ✓ ВЫБРАНО
+      </div>
     );
     if (owned) return (
-      <button onClick={onEquip} style={{
-        marginTop: 4, padding: '4px 10px',
-        background: 'rgba(76,175,80,0.2)', border: '1px solid rgba(76,175,80,0.4)',
-        borderRadius: 6, fontSize: 9, color: '#81C784', cursor: 'pointer', fontWeight: 'bold',
-      }}>Выбрать</button>
+      <button onClick={onEquip} style={{ ...base, background: P_MUSTARD, color: P_BLACK, boxShadow: `2px 2px 0 ${P_BLACK}`, textAlign: 'center' }}>
+        ВЫБРАТЬ
+      </button>
     );
     if (currency === 'babki') return (
       <button onClick={onBuyBabki} disabled={cost > babelKi} style={{
-        marginTop: 4, padding: '4px 10px',
-        background: cost > babelKi ? 'rgba(255,255,255,0.04)' : 'rgba(255,215,0,0.15)',
-        border: `1px solid ${cost > babelKi ? 'rgba(255,255,255,0.1)' : 'rgba(255,215,0,0.4)'}`,
-        borderRadius: 6, fontSize: 9,
-        color: cost > babelKi ? '#616161' : '#FFD700',
-        cursor: cost > babelKi ? 'not-allowed' : 'pointer', fontWeight: 'bold',
-      }}>💰 {cost}</button>
+        ...base, textAlign: 'center',
+        background: cost > babelKi ? '#eee' : P_BLACK,
+        color: cost > babelKi ? '#aaa' : P_MUSTARD,
+        boxShadow: cost > babelKi ? 'none' : `2px 2px 0 ${P_RED}`,
+        cursor: cost > babelKi ? 'not-allowed' : 'pointer',
+      }}>
+        💰 {cost}
+      </button>
     );
     if (currency === 'stars') return (
-      <button onClick={onBuyStars} style={{
-        marginTop: 4, padding: '4px 10px',
-        background: 'rgba(100,181,246,0.12)', border: '1px solid rgba(100,181,246,0.35)',
-        borderRadius: 6, fontSize: 9, color: '#64B5F6', cursor: 'pointer', fontWeight: 'bold',
-      }}>⭐ {cost}</button>
+      <button onClick={onBuyStars} style={{ ...base, background: P_BLACK, color: '#64B5F6', boxShadow: `2px 2px 0 ${P_MUSTARD}`, textAlign: 'center' }}>
+        ⭐ {cost}
+      </button>
     );
     if (currency === 'fuel_linked') return (
-      <button onClick={linkFuelBot} style={{
-        marginTop: 4, padding: '4px 10px',
-        background: 'rgba(255,152,0,0.15)', border: '1px solid rgba(255,152,0,0.4)',
-        borderRadius: 6, fontSize: 8, color: '#FF9800', cursor: 'pointer', fontWeight: 'bold',
-      }}>🔗 Привязать</button>
+      <button onClick={linkFuelBot} style={{ ...base, background: P_MUSTARD, color: P_BLACK, boxShadow: `2px 2px 0 ${P_BLACK}`, textAlign: 'center' }}>
+        🔗 ПРИВЯЗАТЬ
+      </button>
     );
     return null;
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // ── Propaganda card ─────────────────────────────────────────────────────────
 
-  const SECTION_LABELS: Record<ShopSection, string> = { hats: '🧢 Шапки', pets: '🐾 Питомцы', cars: '🚗 Авто', battlepass: '🎫 Пропуск' };
+  const RARITY_LABELS: Record<string, string> = { common: 'обычная', rare: 'редкая', epic: 'эпичная', legendary: 'легенд.' };
+
+  const cardStyle = (equipped: boolean, owned: boolean, rarityColor: string): React.CSSProperties => ({
+    background: equipped ? P_RED : owned ? P_CREAM : '#fff',
+    border: `2px solid ${equipped ? P_BLACK : P_BLACK}`,
+    boxShadow: equipped
+      ? `3px 3px 0 ${P_BLACK}`
+      : owned
+      ? `3px 3px 0 ${P_MUSTARD}`
+      : `3px 3px 0 rgba(0,0,0,0.15)`,
+    padding: '10px 8px 8px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+    borderLeft: `4px solid ${equipped ? P_MUSTARD : rarityColor}`,
+  });
+
+  const SECTION_TABS: { id: ShopSection; label: string }[] = [
+    { id: 'hats',       label: '🧢 Шапки'   },
+    { id: 'pets',       label: '🐾 Питомцы'  },
+    { id: 'cars',       label: '🚗 Авто'     },
+    { id: 'battlepass', label: '🎫 Пропуск'  },
+  ];
+  const FILTER_TABS: { id: 'all'|'owned'|'babki'|'stars'; label: string }[] = [
+    { id: 'all',   label: 'Все'     },
+    { id: 'owned', label: 'Мои'     },
+    { id: 'babki', label: '💰 Бабки' },
+    { id: 'stars', label: '⭐ Stars' },
+  ];
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ width: '100%', maxWidth: 380 }}>
+    <div style={{ width: '100%', background: P_CREAM, fontFamily: 'Oswald, sans-serif' }}>
+
       {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed', top: 60, left: '50%', transform: 'translateX(-50%)',
-          background: toast.ok ? 'rgba(76,175,80,0.92)' : 'rgba(244,67,54,0.92)',
-          color: '#FFF', borderRadius: 10, padding: '8px 18px',
-          fontSize: 13, fontWeight: 'bold', zIndex: 200,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.4)', whiteSpace: 'nowrap',
+          background: toast.ok ? P_BLACK : P_RED,
+          color: P_CREAM,
+          border: `3px solid ${toast.ok ? P_MUSTARD : P_BLACK}`,
+          padding: '8px 18px',
+          fontSize: 13, fontWeight: 900, zIndex: 200,
+          boxShadow: `4px 4px 0 ${P_BLACK}`, whiteSpace: 'nowrap',
+          letterSpacing: 1, textTransform: 'uppercase',
         }}>
           {toast.msg}
         </div>
       )}
 
-      {/* Balance */}
+      {/* Balance bar */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '8px 12px', marginBottom: 10,
-        background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 10,
+        padding: '8px 12px',
+        background: P_MUSTARD,
+        borderBottom: `4px solid ${P_BLACK}`,
       }}>
-        <span style={{ fontSize: 13, color: '#FFD700', fontWeight: 'bold' }}>
-          💰 {profile.babki} бабок
+        <span style={{ fontSize: 15, color: P_BLACK, fontWeight: 900, letterSpacing: 1 }}>
+          💰 {profile.babki} БАБОК
         </span>
-        <span style={{ fontSize: 10, color: '#9E9E9E' }}>
-          🧢 {HATS.find(h => h.id === profile.equippedHat)?.emoji ?? '😶'}{' '}
-          🐾 {PETS.find(p => p.id === profile.equippedPet)?.emoji ?? '🚫'}{' '}
-          🚗 {CAR_SKINS.find(s => s.id === profile.equippedCarSkin)?.emoji ?? '🚗'}
+        <span style={{ fontSize: 11, color: P_BLACK, fontWeight: 700 }}>
+          {HATS.find(h => h.id === profile.equippedHat)?.emoji ?? '😶'}{' '}
+          {PETS.find(p => p.id === profile.equippedPet)?.emoji ?? '—'}{' '}
+          {CAR_SKINS.find(s => s.id === profile.equippedCarSkin)?.emoji ?? '🚗'}
         </span>
       </div>
 
       {/* Section tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-        {(['hats', 'pets', 'cars', 'battlepass'] as ShopSection[]).map(s => (
-          <button key={s} onClick={() => setSection(s)} style={{
-            flex: 1, padding: '7px 4px', fontSize: 11, borderRadius: 9,
-            background: section === s ? 'rgba(255,87,34,0.2)' : 'rgba(255,255,255,0.04)',
-            border: `1px solid ${section === s ? 'rgba(255,87,34,0.5)' : 'rgba(255,255,255,0.1)'}`,
-            color: section === s ? '#FF5722' : '#9E9E9E',
-            cursor: 'pointer', fontWeight: section === s ? 'bold' : 'normal',
-          }}>
-            {SECTION_LABELS[s]}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: `4px solid ${P_BLACK}` }}>
+        {SECTION_TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setSection(tab.id)}
+            style={{
+              padding: '8px 4px', fontSize: 10, fontWeight: 900,
+              background: section === tab.id ? P_RED : '#fff',
+              color: section === tab.id ? P_CREAM : P_BLACK,
+              border: 'none',
+              borderRight: `2px solid ${P_BLACK}`,
+              cursor: 'pointer', letterSpacing: 0.5,
+              textTransform: 'uppercase',
+              fontFamily: 'Oswald, sans-serif',
+            }}
+          >
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-        {(['all', 'owned', 'babki', 'stars'] as const).map(f => {
-          const labels = { all: 'Все', owned: 'Мои', babki: '💰 Бабки', stars: '⭐ Stars' };
-          return (
-            <button key={f} onClick={() => setSelectedFilter(f)} style={{
-              flex: 1, padding: '5px 4px', fontSize: 10, borderRadius: 8,
-              background: selectedFilter === f ? 'rgba(30,100,180,0.2)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${selectedFilter === f ? 'rgba(30,100,180,0.5)' : 'rgba(255,255,255,0.1)'}`,
-              color: selectedFilter === f ? '#64B5F6' : '#9E9E9E',
-              cursor: 'pointer', fontWeight: selectedFilter === f ? 'bold' : 'normal',
-            }}>
-              {labels[f]}
+      <div style={{ padding: '12px' }}>
+        {/* Filter tabs */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+          {FILTER_TABS.map(f => (
+            <button
+              key={f.id}
+              onClick={() => setSelectedFilter(f.id)}
+              style={{
+                flex: 1, padding: '5px 4px', fontSize: 9, fontWeight: 900,
+                background: selectedFilter === f.id ? P_BLACK : '#fff',
+                color: selectedFilter === f.id ? P_MUSTARD : P_BLACK,
+                border: `2px solid ${P_BLACK}`,
+                boxShadow: selectedFilter === f.id ? `2px 2px 0 ${P_RED}` : 'none',
+                cursor: 'pointer', textTransform: 'uppercase',
+                fontFamily: 'Oswald, sans-serif',
+              }}
+            >
+              {f.label}
             </button>
-          );
-        })}
-      </div>
-
-      {/* ── Hats grid ── */}
-      {section === 'hats' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-          {filteredHats.map(hat => {
-            // Free Battle Pass tier rewards are auto-claimed once their unlock condition is met
-            const tierUnlocked = hat.currency === 'free' && hat.battlePassTier !== undefined &&
-              (hat.premiumOnly
-                ? profile.battlePassTier >= hat.battlePassTier && profile.battlePassPremium
-                : profile.battlePassTier >= hat.battlePassTier);
-            const owned = profile.purchasedHats.includes(hat.id) || tierUnlocked;
-            const equipped = profile.equippedHat === hat.id;
-            const rarityColor = RARITY_COLORS[hat.rarity];
-            return (
-              <div key={hat.id} style={{
-                background: equipped ? 'rgba(255,87,34,0.15)' : owned ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
-                border: `1.5px solid ${equipped ? '#FF5722' : rarityColor + '66'}`,
-                borderRadius: 12, padding: '10px 10px 8px',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-              }}>
-                <div style={{ fontSize: 32 }}>{hat.emoji}</div>
-                <div style={{ fontSize: 11, color: '#FFF', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.2 }}>
-                  {hat.name}
-                </div>
-                <div style={{ fontSize: 9, color: rarityColor, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  {hat.rarity === 'common' ? 'обычная' : hat.rarity === 'rare' ? 'редкая' : hat.rarity === 'epic' ? 'эпичная' : 'легенд.'}
-                </div>
-                <div style={{ fontSize: 9, color: '#757575', textAlign: 'center', lineHeight: 1.3 }}>
-                  {hat.description}
-                </div>
-                <ActionButton
-                  owned={owned} equipped={equipped} currency={hat.currency} cost={hat.cost}
-                  babelKi={profile.babki}
-                  onEquip={() => equipHat(hat.id)}
-                  onBuyBabki={() => buyWithBabki(hat)}
-                  onBuyStars={() => buyWithStars('hat', hat)}
-                />
-              </div>
-            );
-          })}
+          ))}
         </div>
-      )}
 
-      {/* ── Pets grid ── */}
-      {section === 'pets' && (
-        <>
-          <div style={{ fontSize: 10, color: '#607D8B', marginBottom: 8, lineHeight: 1.4 }}>
-            🐾 Питомцы бегают рядом с тобой во дворе. Видны только тебе и твоей команде.
-          </div>
+        {/* ── Hats grid ── */}
+        {section === 'hats' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-            {filteredPets.map(pet => {
-              // Free Battle Pass tier rewards are auto-claimed once their unlock condition is met
-              const tierUnlocked = pet.currency === 'free' && pet.battlePassTier !== undefined &&
-                (pet.premiumOnly
-                  ? profile.battlePassTier >= pet.battlePassTier && profile.battlePassPremium
-                  : profile.battlePassTier >= pet.battlePassTier);
-              const owned = profile.purchasedPets.includes(pet.id) || tierUnlocked;
-              const equipped = profile.equippedPet === pet.id;
-              const rarityColor = RARITY_COLORS[pet.rarity];
+            {filteredHats.map(hat => {
+              const tierUnlocked = hat.currency === 'free' && hat.battlePassTier !== undefined &&
+                (hat.premiumOnly
+                  ? profile.battlePassTier >= hat.battlePassTier && profile.battlePassPremium
+                  : profile.battlePassTier >= hat.battlePassTier);
+              const owned = profile.purchasedHats.includes(hat.id) || tierUnlocked;
+              const equipped = profile.equippedHat === hat.id;
+              const rarityColor = RARITY_COLORS[hat.rarity];
               return (
-                <div key={pet.id} style={{
-                  background: equipped ? 'rgba(255,87,34,0.15)' : owned ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
-                  border: `1.5px solid ${equipped ? '#FF5722' : rarityColor + '66'}`,
-                  borderRadius: 12, padding: '10px 10px 8px',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                }}>
-                  <div style={{ fontSize: 32 }}>{pet.emoji}</div>
-                  <div style={{ fontSize: 11, color: '#FFF', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.2 }}>
-                    {pet.name}
-                  </div>
-                  <div style={{ fontSize: 9, color: rarityColor, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {pet.rarity === 'common' ? 'обычная' : pet.rarity === 'rare' ? 'редкая' : pet.rarity === 'epic' ? 'эпичная' : 'легенд.'}
-                  </div>
-                  <div style={{ fontSize: 9, color: '#757575', textAlign: 'center', lineHeight: 1.3, fontStyle: 'italic' }}>
-                    «{pet.animation}»
-                  </div>
-                  <div style={{ fontSize: 9, color: '#616161', textAlign: 'center', lineHeight: 1.3 }}>
-                    {pet.description}
-                  </div>
-                  <ActionButton
-                    owned={owned} equipped={equipped} currency={pet.currency} cost={pet.cost}
-                    babelKi={profile.babki}
-                    onEquip={() => equipPet(pet.id)}
-                    onBuyBabki={() => buyPetWithBabki(pet)}
-                    onBuyStars={() => buyWithStars('pet', pet)}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-
-      {/* ── Car Skins grid ── */}
-      {section === 'cars' && (
-        <>
-          <div style={{ fontSize: 10, color: '#607D8B', marginBottom: 8, lineHeight: 1.4 }}>
-            🚗 Скины применяются к твоей машине в следующем матче.
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-            {filteredCars.map(skin => {
-              const owned = profile.purchasedCarSkins.includes(skin.id);
-              const equipped = profile.equippedCarSkin === skin.id;
-              const rarityColor = RARITY_COLORS[skin.rarity];
-              return (
-                <div key={skin.id} style={{
-                  background: equipped ? 'rgba(255,87,34,0.15)' : owned ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
-                  border: `1.5px solid ${equipped ? '#FF5722' : rarityColor + '66'}`,
-                  borderRadius: 12, padding: '10px 10px 8px',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                }}>
-                  {/* Color preview swatch */}
+                <div key={hat.id} style={cardStyle(equipped, owned, rarityColor)}>
+                  <div style={{ fontSize: 30 }}>{hat.emoji}</div>
                   <div style={{
-                    width: 40, height: 24, borderRadius: 5,
-                    background: skin.color, border: '2px solid rgba(255,255,255,0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 16,
-                  }}>
-                    {skin.emoji}
+                    fontSize: 10, color: equipped ? P_CREAM : P_BLACK,
+                    fontWeight: 900, textAlign: 'center', lineHeight: 1.2,
+                    textTransform: 'uppercase', letterSpacing: 0.3,
+                  }}>{hat.name}</div>
+                  <div style={{ fontSize: 8, color: rarityColor, fontWeight: 700, textTransform: 'uppercase' }}>
+                    {RARITY_LABELS[hat.rarity]}
                   </div>
-                  <div style={{ fontSize: 11, color: '#FFF', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.2 }}>
-                    {skin.name}
-                  </div>
-                  <div style={{ fontSize: 9, color: rarityColor, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {skin.rarity === 'common' ? 'обычная' : skin.rarity === 'rare' ? 'редкая' : skin.rarity === 'epic' ? 'эпичная' : 'легенд.'}
-                  </div>
-                  <div style={{ fontSize: 9, color: '#757575', textAlign: 'center', lineHeight: 1.3 }}>
-                    {skin.description}
+                  <div style={{ fontSize: 9, color: equipped ? 'rgba(255,255,255,0.7)' : '#666', textAlign: 'center', lineHeight: 1.3 }}>
+                    {hat.description}
                   </div>
                   <ActionButton
-                    owned={owned} equipped={equipped} currency={skin.currency} cost={skin.cost}
+                    owned={owned} equipped={equipped} currency={hat.currency} cost={hat.cost}
                     babelKi={profile.babki}
-                    onEquip={() => equipCarSkin(skin.id)}
-                    onBuyBabki={() => buyCarSkinWithBabki(skin)}
-                    onBuyStars={() => buyWithStars('car', skin)}
+                    onEquip={() => equipHat(hat.id)}
+                    onBuyBabki={() => buyWithBabki(hat)}
+                    onBuyStars={() => buyWithStars('hat', hat)}
                   />
                 </div>
               );
             })}
           </div>
-        </>
-      )}
+        )}
 
-      {/* ── §3.3 Battle Pass tab ── */}
-      {section === 'battlepass' && (() => {
-        const xpIntoTier = profile.battlePassXP - profile.battlePassTier * XP_PER_TIER;
-        const tierPct = Math.min(100, Math.round((xpIntoTier / XP_PER_TIER) * 100));
-        const maxed = profile.battlePassTier >= 50;
-        const upcoming = [...HATS, ...PETS]
-          .filter((item): item is (HatDef | PetDef) & { battlePassTier: number } => item.battlePassTier !== undefined)
-          .sort((a, b) => a.battlePassTier - b.battlePassTier);
-
-        return (
-          <div>
-            <div style={{
-              padding: '14px 14px', marginBottom: 12,
-              background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.25)', borderRadius: 12,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                <span style={{ fontSize: 15, fontWeight: 'bold', color: '#FFD700' }}>
-                  🎫 Уровень {profile.battlePassTier}/50
-                </span>
-                <span style={{ fontSize: 10, color: profile.battlePassPremium ? '#64B5F6' : '#757575', fontWeight: 'bold' }}>
-                  {profile.battlePassPremium ? '💎 Премиум активен' : 'Бесплатная линия'}
-                </span>
-              </div>
-              <div style={{ width: '100%', height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                <div style={{
-                  width: `${maxed ? 100 : tierPct}%`, height: '100%',
-                  background: 'linear-gradient(90deg, #FF9800, #FFD700)',
-                }} />
-              </div>
-              <div style={{ fontSize: 9, color: '#9E9E9E', marginTop: 4 }}>
-                {maxed ? 'Максимальный уровень достигнут!' : `${xpIntoTier} / ${XP_PER_TIER} XP до следующего уровня`}
-              </div>
+        {/* ── Pets grid ── */}
+        {section === 'pets' && (
+          <>
+            <div style={{ fontSize: 10, color: '#555', marginBottom: 10, lineHeight: 1.4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              🐾 Питомцы бегают рядом с тобой во дворе. Видны тебе и команде.
             </div>
-
-            {!profile.battlePassPremium && (
-              <button onClick={buyPremiumPass} style={{
-                width: '100%', padding: '12px', marginBottom: 14,
-                background: 'rgba(100,181,246,0.15)', border: '1.5px solid rgba(100,181,246,0.5)',
-                borderRadius: 12, fontSize: 13, fontWeight: 'bold', color: '#64B5F6', cursor: 'pointer',
-              }}>
-                💎 Купить Премиум Пропуск — ⭐ {PREMIUM_PASS_COST_STARS}
-              </button>
-            )}
-
-            <div style={{ fontSize: 10, color: '#607D8B', marginBottom: 8, lineHeight: 1.4 }}>
-              Бесплатная линия открывает часть наград по уровням. Премиум открывает эксклюзивные шапки и питомцев на тех же уровнях.
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {upcoming.map(item => {
-                const reached = profile.battlePassTier >= item.battlePassTier;
-                const unlocked = item.premiumOnly ? reached && profile.battlePassPremium : reached;
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+              {filteredPets.map(pet => {
+                const tierUnlocked = pet.currency === 'free' && pet.battlePassTier !== undefined &&
+                  (pet.premiumOnly
+                    ? profile.battlePassTier >= pet.battlePassTier && profile.battlePassPremium
+                    : profile.battlePassTier >= pet.battlePassTier);
+                const owned = profile.purchasedPets.includes(pet.id) || tierUnlocked;
+                const equipped = profile.equippedPet === pet.id;
+                const rarityColor = RARITY_COLORS[pet.rarity];
                 return (
-                  <div key={item.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
-                    background: unlocked ? 'rgba(76,175,80,0.1)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${unlocked ? 'rgba(76,175,80,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                    borderRadius: 10,
-                  }}>
+                  <div key={pet.id} style={cardStyle(equipped, owned, rarityColor)}>
+                    <div style={{ fontSize: 30 }}>{pet.emoji}</div>
                     <div style={{
-                      width: 30, textAlign: 'center', fontSize: 11, fontWeight: 'bold',
-                      color: reached ? '#FFD700' : '#757575',
-                    }}>
-                      {item.battlePassTier}
+                      fontSize: 10, color: equipped ? P_CREAM : P_BLACK,
+                      fontWeight: 900, textAlign: 'center', lineHeight: 1.2,
+                      textTransform: 'uppercase', letterSpacing: 0.3,
+                    }}>{pet.name}</div>
+                    <div style={{ fontSize: 8, color: rarityColor, fontWeight: 700, textTransform: 'uppercase' }}>
+                      {RARITY_LABELS[pet.rarity]}
                     </div>
-                    <div style={{ fontSize: 20 }}>{item.emoji}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: '#FFF', fontWeight: 'bold' }}>{item.name}</div>
-                      <div style={{ fontSize: 9, color: item.premiumOnly ? '#64B5F6' : '#81C784' }}>
-                        {item.premiumOnly ? '💎 Премиум' : '🆓 Бесплатно'}
-                      </div>
+                    <div style={{ fontSize: 9, color: equipped ? 'rgba(255,255,255,0.7)' : '#666', textAlign: 'center', lineHeight: 1.3, fontStyle: 'italic' }}>
+                      «{pet.animation}»
                     </div>
-                    <div style={{ fontSize: 14 }}>{unlocked ? '✅' : '🔒'}</div>
+                    <ActionButton
+                      owned={owned} equipped={equipped} currency={pet.currency} cost={pet.cost}
+                      babelKi={profile.babki}
+                      onEquip={() => equipPet(pet.id)}
+                      onBuyBabki={() => buyPetWithBabki(pet)}
+                      onBuyStars={() => buyWithStars('pet', pet)}
+                    />
                   </div>
                 );
               })}
             </div>
-          </div>
-        );
-      })()}
+          </>
+        )}
 
-      {/* §10.3 Stars info */}
-      <div style={{
-        marginTop: 14, padding: '8px 12px',
-        background: 'rgba(100,181,246,0.06)', border: '1px solid rgba(100,181,246,0.15)',
-        borderRadius: 10, fontSize: 10, color: '#607D8B', lineHeight: 1.5,
-      }}>
-        ⭐ Покупки за Telegram Stars доступны в приложении Telegram.
-        Открой игру через @bakstab_bot для оплаты.
+        {/* ── Car Skins grid ── */}
+        {section === 'cars' && (
+          <>
+            <div style={{ fontSize: 10, color: '#555', marginBottom: 10, lineHeight: 1.4, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              🚗 Скины применяются к твоей машине в следующем матче.
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+              {filteredCars.map(skin => {
+                const owned = profile.purchasedCarSkins.includes(skin.id);
+                const equipped = profile.equippedCarSkin === skin.id;
+                const rarityColor = RARITY_COLORS[skin.rarity];
+                return (
+                  <div key={skin.id} style={cardStyle(equipped, owned, rarityColor)}>
+                    <div style={{
+                      width: 44, height: 26, borderRadius: 3,
+                      background: skin.color, border: `2px solid ${P_BLACK}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 16, boxShadow: `2px 2px 0 ${P_BLACK}`,
+                    }}>
+                      {skin.emoji}
+                    </div>
+                    <div style={{
+                      fontSize: 10, color: equipped ? P_CREAM : P_BLACK,
+                      fontWeight: 900, textAlign: 'center', lineHeight: 1.2,
+                      textTransform: 'uppercase', letterSpacing: 0.3,
+                    }}>{skin.name}</div>
+                    <div style={{ fontSize: 8, color: rarityColor, fontWeight: 700, textTransform: 'uppercase' }}>
+                      {RARITY_LABELS[skin.rarity]}
+                    </div>
+                    <div style={{ fontSize: 9, color: equipped ? 'rgba(255,255,255,0.7)' : '#666', textAlign: 'center', lineHeight: 1.3 }}>
+                      {skin.description}
+                    </div>
+                    <ActionButton
+                      owned={owned} equipped={equipped} currency={skin.currency} cost={skin.cost}
+                      babelKi={profile.babki}
+                      onEquip={() => equipCarSkin(skin.id)}
+                      onBuyBabki={() => buyCarSkinWithBabki(skin)}
+                      onBuyStars={() => buyWithStars('car', skin)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ── §3.3 Battle Pass tab ── */}
+        {section === 'battlepass' && (() => {
+          const xpIntoTier = profile.battlePassXP - profile.battlePassTier * XP_PER_TIER;
+          const tierPct = Math.min(100, Math.round((xpIntoTier / XP_PER_TIER) * 100));
+          const maxed = profile.battlePassTier >= 50;
+          const upcoming = [...HATS, ...PETS]
+            .filter((item): item is (HatDef | PetDef) & { battlePassTier: number } => item.battlePassTier !== undefined)
+            .sort((a, b) => a.battlePassTier - b.battlePassTier);
+
+          return (
+            <div>
+              {/* XP bar */}
+              <div style={{
+                padding: '14px', marginBottom: 12,
+                background: '#fff', border: `4px solid ${P_BLACK}`,
+                boxShadow: `4px 4px 0 ${P_MUSTARD}`,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                  <span style={{ fontSize: 14, fontWeight: 900, color: P_BLACK, textTransform: 'uppercase' }}>
+                    🎫 Уровень {profile.battlePassTier}/50
+                  </span>
+                  <span style={{ fontSize: 10, color: profile.battlePassPremium ? '#1565C0' : '#888', fontWeight: 900 }}>
+                    {profile.battlePassPremium ? '💎 Премиум' : 'Базовый'}
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: 14, background: P_BLACK, overflow: 'hidden', position: 'relative' }}>
+                  <div style={{
+                    width: `${maxed ? 100 : tierPct}%`, height: '100%',
+                    background: `linear-gradient(90deg, ${P_RED}, ${P_MUSTARD})`,
+                    transition: 'width 0.4s',
+                  }} />
+                  <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: 6, fontSize: 9, fontWeight: 900, color: P_CREAM }}>
+                    {maxed ? 'МАКСИМУМ!' : `${xpIntoTier} / ${XP_PER_TIER} XP`}
+                  </span>
+                </div>
+              </div>
+
+              {!profile.battlePassPremium && (
+                <button onClick={buyPremiumPass} style={{
+                  width: '100%', padding: '12px', marginBottom: 14,
+                  background: P_BLACK, border: `4px solid ${P_BLACK}`,
+                  boxShadow: `4px 4px 0 ${P_RED}`,
+                  fontSize: 13, fontWeight: 900, color: P_MUSTARD,
+                  cursor: 'pointer', textTransform: 'uppercase',
+                  fontFamily: 'Oswald, sans-serif', letterSpacing: 1,
+                }}>
+                  💎 Купить Премиум — ⭐ {PREMIUM_PASS_COST_STARS}
+                </button>
+              )}
+
+              <div style={{ fontSize: 9, color: '#666', marginBottom: 10, lineHeight: 1.5, fontWeight: 700, textTransform: 'uppercase' }}>
+                Бесплатная линия открывает часть наград. Премиум — эксклюзивные шапки и питомцев.
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {upcoming.map(item => {
+                  const reached = profile.battlePassTier >= item.battlePassTier;
+                  const unlocked = item.premiumOnly ? reached && profile.battlePassPremium : reached;
+                  return (
+                    <div key={item.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '8px 10px',
+                      background: unlocked ? P_MUSTARD : '#fff',
+                      border: `2px solid ${P_BLACK}`,
+                      boxShadow: unlocked ? `2px 2px 0 ${P_BLACK}` : 'none',
+                    }}>
+                      <div style={{ width: 28, textAlign: 'center', fontSize: 11, fontWeight: 900, color: reached ? P_RED : '#aaa' }}>
+                        {item.battlePassTier}
+                      </div>
+                      <div style={{ fontSize: 20 }}>{item.emoji}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: P_BLACK, fontWeight: 900, textTransform: 'uppercase' }}>{item.name}</div>
+                        <div style={{ fontSize: 9, color: item.premiumOnly ? '#1565C0' : '#2e7d32', fontWeight: 700, textTransform: 'uppercase' }}>
+                          {item.premiumOnly ? '💎 Премиум' : '🆓 Бесплатно'}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 14 }}>{unlocked ? '✅' : '🔒'}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Stars info footer */}
+        <div style={{
+          marginTop: 14, padding: '8px 12px',
+          background: P_BLACK, border: `2px solid ${P_BLACK}`,
+          fontSize: 10, color: P_CREAM, lineHeight: 1.5, fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: 0.5,
+        }}>
+          ⭐ Покупки за Stars — только в Telegram: @bakstab_bot
+        </div>
       </div>
     </div>
   );

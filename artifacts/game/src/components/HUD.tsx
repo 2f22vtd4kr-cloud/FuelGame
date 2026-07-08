@@ -203,6 +203,8 @@ export default function HUD({ state }: HUDProps) {
   const [showEmoteWheel, setShowEmoteWheel] = useState(false);
   const [showObjective, setShowObjective] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPlayerList, setShowPlayerList] = useState(false);
+  const [showFuelDetail, setShowFuelDetail] = useState(false);
 
   const localPlayer = state.players.find(p => p.id === state.localPlayerId);
   if (!localPlayer) return null;
@@ -367,39 +369,58 @@ export default function HUD({ state }: HUDProps) {
           })()}
         </div>
 
-        {/* Car fuel bars */}
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 9, color: '#aaa', marginBottom: 3, textShadow: '0 1px 2px #000' }}>
-            🚗 БАКИ
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {state.cars.map(car => {
-              const fuelPct = car.fuel;
-              const color = state.colorblindMode
-                ? fuelPct > 40 ? '#2196F3' : fuelPct > 20 ? '#FF9800' : '#FF5722'
-                : fuelPct > 40 ? '#4CAF50' : fuelPct > 20 ? '#FF9800' : '#F44336';
-              return (
-                <div key={car.id} style={{ display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'flex-end' }}>
-                  <div style={{ fontSize: 9, color: '#ccc', minWidth: 24 }}>
-                    {Math.round(fuelPct)}%
-                  </div>
+        {/* Car fuel — compact badge, tap to expand */}
+        <div style={{ textAlign: 'right', pointerEvents: 'all', position: 'relative' }}>
+          {(() => {
+            const minFuel = Math.min(...state.cars.map(c => c.fuel));
+            const anySiphoning = state.cars.some(c => c.siphonPhase === 2);
+            const alertColor = minFuel < 20 ? '#FF1744' : minFuel < 40 ? '#FF9800' : '#4CAF50';
+            return (
+              <>
+                <button
+                  onClick={() => setShowFuelDetail(v => !v)}
+                  style={{
+                    background: 'rgba(0,0,0,0.6)', border: `1px solid ${alertColor}55`,
+                    borderRadius: 8, padding: '4px 8px',
+                    fontSize: 10, color: alertColor, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  🚗 {Math.round(minFuel)}%{anySiphoning ? ' 🪣' : ''}
+                </button>
+                {showFuelDetail && (
                   <div style={{
-                    width: 60, height: 7,
-                    background: 'rgba(0,0,0,0.55)', borderRadius: 4,
-                    border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden',
+                    position: 'absolute', top: 36, right: 0,
+                    background: 'rgba(10,10,20,0.97)', border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: 10, padding: '8px 10px',
+                    display: 'flex', flexDirection: 'column', gap: 5,
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.8)',
                   }}>
-                    <div style={{
-                      height: '100%', width: `${fuelPct}%`,
-                      background: color, borderRadius: 4, transition: 'width 0.2s',
-                    }} />
+                    {state.cars.map(car => {
+                      const fuelPct = car.fuel;
+                      const color = state.colorblindMode
+                        ? fuelPct > 40 ? '#2196F3' : fuelPct > 20 ? '#FF9800' : '#FF5722'
+                        : fuelPct > 40 ? '#4CAF50' : fuelPct > 20 ? '#FF9800' : '#F44336';
+                      return (
+                        <div key={car.id} style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                          <div style={{ fontSize: 9, color: '#ccc', minWidth: 24 }}>
+                            {Math.round(fuelPct)}%
+                          </div>
+                          <div style={{
+                            width: 64, height: 7, background: 'rgba(0,0,0,0.55)',
+                            borderRadius: 4, border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden',
+                          }}>
+                            <div style={{ height: '100%', width: `${fuelPct}%`, background: color, borderRadius: 4 }} />
+                          </div>
+                          {car.siphonPhase === 2 && <span style={{ fontSize: 10, color: '#FF1744' }}>🪣</span>}
+                        </div>
+                      );
+                    })}
                   </div>
-                  {car.siphonPhase === 2 && (
-                    <span style={{ fontSize: 10, color: '#FF1744' }}>🪣</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
 
@@ -519,39 +540,57 @@ export default function HUD({ state }: HUDProps) {
         </div>
       )}
 
-      {/* ── Player list ── */}
-      <div style={{
-        position: 'absolute', top: 100, left: 12,
-        display: 'flex', flexDirection: 'column', gap: 3,
-        maxHeight: 220, overflowY: 'hidden',
-      }}>
-        {state.players.map(p => {
-          const charDef = CHARACTERS[p.character];
-          const isLocal = p.id === state.localPlayerId;
-          const showAsSlivshchik = isLocal || (isSlivshchik && p.role === 'slivshchik');
-          return (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 5, opacity: p.isAlive ? 1 : 0.4 }}>
-              <div style={{
-                width: 10, height: 10, borderRadius: '50%',
-                background: charDef.color,
-                border: isLocal ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.3)',
-                flexShrink: 0,
-              }} />
-              <div style={{
-                fontSize: 9,
-                color: p.isAlive ? (isLocal ? '#FFD700' : '#ccc') : '#666',
-                textShadow: '0 1px 2px rgba(0,0,0,0.9)',
-                textDecoration: p.isAlive ? 'none' : 'line-through',
-              }}>
-                {p.name}
-                {!p.isAlive && ' 💀'}
-                {showAsSlivshchik && p.role === 'slivshchik' && (
-                  <span style={{ color: '#FF5252', marginLeft: 3 }}>🪣</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+      {/* ── Player list — compact badge, tap to expand ── */}
+      <div style={{ position: 'absolute', top: 100, left: 12, pointerEvents: 'all' }}>
+        <button
+          onClick={() => setShowPlayerList(v => !v)}
+          style={{
+            background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: 8, padding: '4px 8px',
+            fontSize: 11, color: '#ccc', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}
+        >
+          🏠 {aliveKhozaeva}
+          {isSlivshchik && <span style={{ color: '#FF5252' }}>🪣 {aliveSlivshchiki}</span>}
+        </button>
+        {showPlayerList && (
+          <div style={{
+            marginTop: 4, background: 'rgba(10,10,20,0.97)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 10, padding: '6px 10px',
+            display: 'flex', flexDirection: 'column', gap: 3,
+            maxHeight: 200, overflowY: 'auto',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.8)',
+          }}>
+            {state.players.map(p => {
+              const charDef = CHARACTERS[p.character];
+              const isLocal = p.id === state.localPlayerId;
+              const showAsSlivshchik = isLocal || (isSlivshchik && p.role === 'slivshchik');
+              return (
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 5, opacity: p.isAlive ? 1 : 0.4 }}>
+                  <div style={{
+                    width: 10, height: 10, borderRadius: '50%',
+                    background: charDef.color,
+                    border: isLocal ? '2px solid #FFD700' : '1px solid rgba(255,255,255,0.3)',
+                    flexShrink: 0,
+                  }} />
+                  <div style={{
+                    fontSize: 9, color: p.isAlive ? (isLocal ? '#FFD700' : '#ccc') : '#666',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.9)',
+                    textDecoration: p.isAlive ? 'none' : 'line-through',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {p.name}{!p.isAlive && ' 💀'}
+                    {showAsSlivshchik && p.role === 'slivshchik' && (
+                      <span style={{ color: '#FF5252', marginLeft: 3 }}>🪣</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── §2.9 Slivshchik sabotage menu button ── */}
@@ -687,15 +726,16 @@ export default function HUD({ state }: HUDProps) {
         </div>
       )}
 
-      {/* ── §12.4 Tutorial overlay ── */}
+      {/* ── §12.4 Tutorial overlay — fixed so joystick zone can't block it ── */}
       {state.tutorialStep >= 1 && state.tutorialStep <= 3 && state.phase === 'play' && (
         <div style={{
-          position: 'absolute', bottom: 150, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(10,20,40,0.96)',
-          border: '2px solid #FFD700',
+          position: 'fixed', bottom: 180, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(10,20,40,0.97)',
+          border: '3px solid #FFD700',
           borderRadius: 16, padding: '14px 20px',
-          maxWidth: 290, pointerEvents: 'all', zIndex: 50,
-          textAlign: 'center', boxShadow: '0 6px 28px rgba(0,0,0,0.8)',
+          maxWidth: 310, width: 'calc(100vw - 40px)',
+          pointerEvents: 'all', zIndex: 200,
+          textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.9)',
         }}>
           {state.tutorialStep === 1 && (
             <>

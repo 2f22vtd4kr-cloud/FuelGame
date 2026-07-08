@@ -10,6 +10,8 @@ interface Props {
 
 const JOYSTICK_RADIUS = 52;
 const KNOB_RADIUS = 26;
+const JOYSTICK_LEFT = 24;   // fixed left offset from viewport edge
+const JOYSTICK_BOTTOM = 100; // fixed bottom offset from viewport edge
 
 export default function VirtualJoystick({ onMove, onInteract, onSprintToggle, onEmoteOpen, visible }: Props) {
   const baseRef = useRef<HTMLDivElement>(null);
@@ -25,13 +27,14 @@ export default function VirtualJoystick({ onMove, onInteract, onSprintToggle, on
     if (touchIdRef.current !== null) return;
     const touch = e.changedTouches[0];
     touchIdRef.current = touch.identifier;
-    basePositionRef.current = { x: touch.clientX, y: touch.clientY };
 
-    // Position the base at touch point
+    // Fixed joystick: always anchored at bottom-left, knob tracks within it
+    const centerX = JOYSTICK_LEFT + JOYSTICK_RADIUS;
+    const centerY = window.innerHeight - JOYSTICK_BOTTOM - JOYSTICK_RADIUS;
+    basePositionRef.current = { x: centerX, y: centerY };
+
     if (baseRef.current) {
-      baseRef.current.style.left = `${touch.clientX - JOYSTICK_RADIUS}px`;
-      baseRef.current.style.top = `${touch.clientY - JOYSTICK_RADIUS}px`;
-      baseRef.current.style.opacity = '1';
+      baseRef.current.style.opacity = '0.92';
     }
     if (knobRef.current) {
       knobRef.current.style.transform = 'translate(-50%, -50%)';
@@ -82,7 +85,7 @@ export default function VirtualJoystick({ onMove, onInteract, onSprintToggle, on
     touchIdRef.current = null;
     basePositionRef.current = null;
 
-    if (baseRef.current) baseRef.current.style.opacity = '0.4';
+    if (baseRef.current) baseRef.current.style.opacity = '0.45';
     if (knobRef.current) knobRef.current.style.transform = 'translate(-50%, -50%)';
     onMove(0, 0);
   }, [onMove]);
@@ -125,15 +128,15 @@ export default function VirtualJoystick({ onMove, onInteract, onSprintToggle, on
         }}
       />
 
-      {/* Joystick visual (follows touch) */}
+      {/* Joystick visual — static, anchored at bottom-left */}
       <div
         ref={baseRef}
         style={{
           position: 'fixed',
           width: JOYSTICK_RADIUS * 2,
           height: JOYSTICK_RADIUS * 2,
-          left: 30,
-          bottom: 80,
+          left: JOYSTICK_LEFT,
+          bottom: JOYSTICK_BOTTOM,
           borderRadius: '50%',
           background: 'rgba(255,255,255,0.12)',
           border: '2px solid rgba(255,255,255,0.3)',
