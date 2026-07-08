@@ -1,0 +1,47 @@
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 5px rgba(255, 87, 34, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(255, 87, 34, 0.6); }
+  100% { box-shadow: 0 0 5px rgba(255, 87, 34, 0.2); }
+}
+
+@keyframes slide-ticker {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.arcade-glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.arcade-button-primary {
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.arcade-button-primary:active {
+  transform: scale(0.95);
+}
+
+.arcade-character-card {
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.arcade-character-card:hover {
+  transform: translateY(-4px);
+}
+
+.bg-arcade-gradient {
+  background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
+}
+
+.text-glow-orange {
+  text-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
+}

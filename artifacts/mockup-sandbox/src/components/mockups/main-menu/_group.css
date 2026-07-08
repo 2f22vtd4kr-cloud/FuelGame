@@ -1,0 +1,34 @@
+/* Tokens copied from artifacts/game/src/index.css — 95-Й Бакстаб main app theme */
+:root {
+  --background: 210 30% 8%;
+  --foreground: 0 0% 95%;
+  --border: 210 20% 18%;
+  --input: 210 20% 22%;
+  --ring: 22 100% 55%;
+
+  --card: 210 25% 12%;
+  --card-foreground: 0 0% 90%;
+  --card-border: 210 20% 20%;
+
+  --primary: 22 100% 55%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 210 20% 18%;
+  --secondary-foreground: 0 0% 90%;
+
+  --muted: 210 20% 15%;
+  --muted-foreground: 210 10% 55%;
+
+  --accent: 130 50% 35%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 80% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --app-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --radius: 0.5rem;
+}
+
+.menu-root {
+  font-family: var(--app-font-sans);
+}

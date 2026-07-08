@@ -1,0 +1,76 @@
+.propaganda-root {
+  --propaganda-red: #cc2b1d;
+  --propaganda-mustard: #e5a50a;
+  --propaganda-cream: #f4ebd0;
+  --propaganda-black: #1a1a1a;
+  --propaganda-border: 4px;
+  
+  background-color: var(--propaganda-cream);
+  color: var(--propaganda-black);
+  font-family: 'Inter', sans-serif;
+  background-image: 
+    url("https://www.transparenttextures.com/patterns/paper-fibers.png"),
+    linear-gradient(rgba(244, 235, 208, 0.8), rgba(244, 235, 208, 0.8));
+}
+
+.propaganda-poster-edge {
+  border: var(--propaganda-border) solid var(--propaganda-black);
+  box-shadow: 8px 8px 0px var(--propaganda-black);
+}
+
+.propaganda-diagonal {
+  clip-path: polygon(0 0, 100% 0, 100% 85%, 0% 100%);
+}
+
+.propaganda-heading {
+  font-family: 'Inter', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+}
+
+.propaganda-button {
+  border: var(--propaganda-border) solid var(--propaganda-black);
+  box-shadow: 4px 4px 0px var(--propaganda-black);
+  transition: transform 0.1s, box-shadow 0.1s;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.propaganda-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--propaganda-black);
+}
+
+.propaganda-card {
+  border: var(--propaganda-border) solid var(--propaganda-black);
+  background: white;
+}
+
+.propaganda-star {
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  background-color: var(--propaganda-red);
+}
+
+.halftone-overlay {
+  background-image: radial-gradient(var(--propaganda-black) 1px, transparent 0);
+  background-size: 4px 4px;
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+@keyframes ticker {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.ticker-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ticker-content {
+  display: inline-block;
+  animation: ticker 15s linear infinite;
+}
