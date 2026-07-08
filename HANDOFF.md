@@ -109,9 +109,31 @@ Behavior tree, Сливщик AI (siphon/ambush/sabotage/fake-task), Хозяи�
 | Item | Status |
 |---|---|
 | Color palette (#87CEEB sky, #4CAF50 grass, Telegram panels) | ✅ |
-| Sprite sheets (320 character sprites, 48 car sprites) | ❌ Using **emoji circles** — single largest visual gap |
+| Character/car sprites — 10 char + 6 car AI-generated static PNGs, primitive-circle fallback | ✅ `sprites.ts` / `renderer.ts` (see `.agents/memory/game-sprite-art.md`) |
+| Directional walk-cycle sprite sheets (procedurally generated, per-character) | ⚠️ **Pilot done for Denis only** — see "Sprite-sheet generation workflow" below. Remaining 9 characters + cars still use the older single-pose AI PNG + rotation approach |
 | Walk/siphon animation | ✅ (simplified) |
 | Ejection cinematic | ⚠️ Text overlay only (no sprite animation) |
+
+---
+
+### Sprite-sheet generation workflow (adopted this session — apply to remaining characters/assets over future sessions)
+
+**Why this exists:** rather than having an external AI generate a static character image and hand-writing separate slicing/animation code against it (error-prone: path mismatches, misaligned grids, anti-aliased edges), assets that benefit from crisp directional animation are now **drawn procedurally in Node** (pure JS, zero native deps) and the slicing/animation code is written against the exact grid that was just generated — one sandboxed step, nothing to go out of sync.
+
+**Reusable building blocks** (`artifacts/game/scripts/lib/`):
+- `pixelart.mjs` — `PixelGrid` (low-res grid canvas with `fillRect`/`row`/`mirrored`/`shifted`) + `composeSheet()` (nearest-neighbor upscale + tile into a cols×rows sheet PNG buffer).
+- `png.mjs` — zero-dependency RGBA PNG encoder (Node `zlib` only — no `canvas`/`sharp`/ImageMagick needed, so it always works regardless of what native libs are installed).
+
+**Pattern for a new character/asset** (Denis is the reference implementation):
+1. Write `artifacts/game/scripts/generate-<name>-sprite.mjs`: build each frame as a 16×16 `PixelGrid` (or another low-res size), 4 frames × 4 direction-rows (Left/Right/Down/Up), scale ×4 → 64×64 final frames. Add a matching `"gen:sprite:<name>"` script to `artifacts/game/package.json`.
+2. Run it (`pnpm --filter @workspace/game run gen:sprite:<name>`) to write straight into `artifacts/game/public/sprites/char_<name>.png`, replacing the old static AI-generated PNG for that character.
+3. Register the sheet's grid metadata in `sprites.ts::SPRITE_SHEETS` (`cols`, `rows`, `frameW`, `frameH`, `rowFor: {left,right,down,up}`). Characters absent from this map keep the old whole-image-rotated rendering automatically — no other code changes needed to add a new animated character.
+4. `renderer.ts::drawPlayers` already branches on `SPRITE_SHEETS[...]`: if present it calls `updateSpriteAnimation()` (module-level per-player state, keyed off actual pos-delta between renders — not off the raw joystick vector, since movement speed here isn't itself proportional to joystick tilt) to pick the current `(row, frame)` and slices it with `imageSmoothingEnabled = false`; if absent it falls back to the legacy single-image rotate path.
+5. Visually verify the generated sheet directly (crop individual frames with ImageMagick `convert`/`magick` and view via the image-reading tool) before wiring it in — this catches misaligned grids/color mistakes far faster than testing in-game.
+
+**Direction bucketing** reuses the existing `facingAngle` (0=right, PI/2=down) — no separate joystick-vector interception needed, since `facingAngle` is already derived from the joystick/keyboard input each tick. Buckets: right `[-45°,45°)`, down `[45°,135°)`, up `[-135°,-45°)`, left = remaining arc.
+
+**Next candidates to apply this to** (do one at a time, verify visually before moving on): the other 9 characters (Аня, Вова, Дядя Серёжа, Петрович, Марина, Ахмет, Олег, Лена, Барсик), then the 6 car sprites (would need a different animation — wheel rotation / no walk cycle, so treat as a separate prompt), then UI icon assets if desired. Each should get its own `generate-<name>-sprite.mjs`.
 
 ---
 

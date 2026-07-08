@@ -1,6 +1,6 @@
-import type { GameState, Vec2 } from './types';
+import type { GameState, Player, Vec2 } from './types';
 import { ALARM_RADIUS, MAP_W, MAP_H, CROUCH_VISIBILITY_MULT, VENT_FLASH_DURATION } from './types';
-import { getSprite, CAR_SPRITE_MAP } from './sprites';
+import { getSprite, CAR_SPRITE_MAP, SPRITE_SHEETS } from './sprites';
 import { TASK_DEFS } from '../data/tasks';
 import { DECORATIONS, ENTRANCE_POS, DUMPSTER_POSITIONS, VISION_BUILDINGS, VALVE_POSITIONS, BABUSHKA_CERBERUS_POS, BABUSHKA_NPC_POS, PLAYGROUND } from '../data/map';
 import { CHARACTERS } from '../data/characters';
@@ -34,6 +34,77 @@ let _camSmoothX = -1; // -1 signals "uninitialised — snap on first frame"
 let _camSmoothY = -1;
 const CAM_LERP = 0.15;
 
+// ─── Directional sprite-sheet animation state ──────────────────────────────
+// Purely a rendering concern: derived each frame from how far a player's
+// pos actually moved, so it needs no changes to Player/network types and
+// works identically for the local player, bots, and remote players.
+interface SpriteAnimState {
+  row: 'left' | 'right' | 'down' | 'up';
+  frame: number;
+  frameTimer: number;
+  lastX: number;
+  lastY: number;
+}
+const _spriteAnim = new Map<string, SpriteAnimState>();
+let _lastAnimTs = -1;
+
+/** Buckets a facingAngle (0=right, PI/2=down) into one of 4 cardinal rows. */
+function angleToRow(angle: number): 'left' | 'right' | 'down' | 'up' {
+  let a = angle;
+  while (a > Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+  const deg = (a * 180) / Math.PI;
+  if (deg >= -45 && deg < 45) return 'right';
+  if (deg >= 45 && deg < 135) return 'down';
+  if (deg >= -135 && deg < -45) return 'up';
+  return 'left';
+}
+
+/**
+ * Advances (or freezes) the walk-cycle animation for a player with a
+ * directional sprite sheet. Frame-rate scales with actual on-screen
+ * movement speed (px/sec) — this tracks sprint/crouch/canister/flowerbed
+ * modifiers automatically and always matches how fast the character visibly
+ * moves, which reads better than driving it off raw joystick deflection
+ * (movement speed itself isn't proportional to joystick tilt in this game).
+ * Stopping (joystick released / no movement) freezes instantly on frame 0
+ * of the last active direction row.
+ */
+function updateSpriteAnimation(player: Player, animDt: number): { row: number; frame: number } {
+  const meta = SPRITE_SHEETS[`char_${player.character}`]!;
+  let st = _spriteAnim.get(player.id);
+  if (!st) {
+    st = { row: 'down', frame: 0, frameTimer: 0, lastX: player.pos.x, lastY: player.pos.y };
+    _spriteAnim.set(player.id, st);
+  }
+
+  const dx = player.pos.x - st.lastX;
+  const dy = player.pos.y - st.lastY;
+  const distMoved = Math.hypot(dx, dy);
+  st.lastX = player.pos.x;
+  st.lastY = player.pos.y;
+
+  const MOVE_EPSILON = 0.15; // px/frame — filters out floating-point jitter while idle
+  const moving = distMoved > MOVE_EPSILON && animDt > 0;
+
+  if (moving) {
+    st.row = angleToRow(player.facingAngle);
+    const speedPxPerSec = distMoved / animDt;
+    // Faster movement -> shorter frame interval (walk vs. sprint cadence).
+    const frameInterval = Math.max(0.06, Math.min(0.22, 0.24 - speedPxPerSec * 0.0006));
+    st.frameTimer += animDt;
+    if (st.frameTimer >= frameInterval) {
+      st.frameTimer = 0;
+      st.frame = (st.frame + 1) % meta.cols;
+    }
+  } else {
+    st.frame = 0;
+    st.frameTimer = 0;
+  }
+
+  return { row: meta.rowFor[st.row], frame: st.frame };
+}
+
 // ─── Main render ──────────────────────────────────────────────────────────────
 
 export function renderGame(
@@ -44,6 +115,12 @@ export function renderGame(
 ): void {
   const localPlayer = state.players.find(p => p.id === state.localPlayerId);
   if (!localPlayer) return;
+
+  // ── Sprite-sheet animation timing (independent of the render dt param,
+  // since this function doesn't receive one) ──────────────────────────────
+  const _animNow = performance.now();
+  const animDt = _lastAnimTs === -1 ? 0 : Math.min((_animNow - _lastAnimTs) / 1000, 0.05);
+  _lastAnimTs = _animNow;
 
   // ── §2.2 Camera: smoothly follow local player with lerp at 0.15 ─────────────
   const targetCamX = localPlayer.pos.x - cw / 2;
@@ -107,7 +184,7 @@ export function renderGame(
   drawBodies(ctx, state);
   drawCanisters(ctx, state);
   drawValveMarkers(ctx, state);    // §2.9 valve fix markers
-  drawPlayers(ctx, state, visionPoly, crouchCheckPoly);
+  drawPlayers(ctx, state, visionPoly, crouchCheckPoly, animDt);
   drawBabushkaNPC(ctx, state);     // §2.9 babushka cerberus NPC
   drawPersistentGrandma(ctx, state); // §2.4 always-present bench grandma
   drawAlarmButton(ctx, state);
@@ -1155,9 +1232,20 @@ function drawPlayers(
   state: GameState,
   visionPoly: Vec2[] | null,
   crouchCheckPoly: Vec2[] | null = null,
+  animDt = 0,
 ): void {
   const localPlayer = state.players.find(p => p.id === state.localPlayerId);
   const isLocalSlivshchik = localPlayer?.role === 'slivshchik';
+
+  // Prune sprite-animation state for players no longer in this match (bots
+  // recreated each match, players who left, etc.) so `_spriteAnim` never
+  // grows unbounded across a long multiplayer session.
+  if (_spriteAnim.size > 0) {
+    const currentIds = new Set(state.players.map(p => p.id));
+    for (const id of _spriteAnim.keys()) {
+      if (!currentIds.has(id)) _spriteAnim.delete(id);
+    }
+  }
 
   for (const player of state.players) {
     if (!player.isAlive) continue;
@@ -1202,7 +1290,21 @@ function drawPlayers(
 
     // §7.3 Character sprite (generated PNG) or primitive-circle fallback
     const charSprite = getSprite(`char_${player.character}`);
-    if (charSprite) {
+    const sheetMeta = SPRITE_SHEETS[`char_${player.character}`];
+    if (charSprite && sheetMeta) {
+      // Directional walk-cycle sheet: slice the current (row, frame) instead
+      // of rotating a single whole-body image.
+      const { row, frame } = updateSpriteAnimation(player, animDt);
+      const spriteSize = player.character === 'barsik' ? 24 : 42;
+      ctx.save();
+      ctx.imageSmoothingEnabled = false; // crisp pixel art — no blur/anti-aliasing
+      ctx.drawImage(
+        charSprite,
+        frame * sheetMeta.frameW, row * sheetMeta.frameH, sheetMeta.frameW, sheetMeta.frameH,
+        x - spriteSize / 2, y - spriteSize / 2, spriteSize, spriteSize,
+      );
+      ctx.restore();
+    } else if (charSprite) {
       const spriteSize = player.character === 'barsik' ? 24 : 42;
       ctx.save();
       ctx.translate(x, y);

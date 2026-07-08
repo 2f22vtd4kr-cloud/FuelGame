@@ -31,6 +31,29 @@ export const CAR_SPRITE_MAP: Record<string, string> = {
   car6: 'car_vesta',    // #6A1B9A purple → Lada Vesta NG
 };
 
+// ─── Directional sprite-sheet metadata ─────────────────────────────────────
+// Characters listed here are rendered by slicing frames out of a grid sheet
+// (rows = directions, cols = walk-cycle frames) instead of rotating a single
+// whole-body image. See renderer.ts::drawPlayers for the animation logic.
+export interface SpriteSheetMeta {
+  cols: number;
+  rows: number;
+  frameW: number;
+  frameH: number;
+  /** Row index for each cardinal direction within the sheet. */
+  rowFor: { left: number; right: number; down: number; up: number };
+}
+
+export const SPRITE_SHEETS: Partial<Record<string, SpriteSheetMeta>> = {
+  char_denis: {
+    cols: 4,
+    rows: 4,
+    frameW: 64,
+    frameH: 64,
+    rowFor: { left: 0, right: 1, down: 2, up: 3 },
+  },
+};
+
 const loaded = new Map<string, HTMLImageElement>();
 
 /** Call once at app startup; resolves when all sprites are loaded (or skipped on error). */
