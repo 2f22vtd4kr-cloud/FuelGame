@@ -43,14 +43,14 @@ The game is then available at the Replit preview URL (root path `/`).
 - `artifacts/game/src/components/Lobby.tsx` — character select + game settings
 - `artifacts/game/src/components/GameCanvas.tsx` — mounts canvas, drives RAF loop
 
-## Denis sprite sheet (in progress)
+## Character sprite sheets
 
-- `artifacts/mockup-sandbox/src/components/mockups/denis-sprite/DenisSprite.tsx` — pixel-art
-  sprite sheet designer, live on the canvas board. Shows all 4 directions × 4 walk frames at
-  3× zoom with animated preview. **Next session:** export to
-  `artifacts/game/public/sprites/char_denis.png` (256×256 RGBA PNG) using node-canvas or the
-  procedural PNG writer in `scripts/`. See `.agents/memory/denis-sprite-canvas.md` for palette,
-  export plan, and the left↔right orientation swap note.
+- All 10 characters (Денис, Аня, Вова, Дядя Серёжа, Петрович, Марина, Ахмет, Олег, Лена, Барсик)
+  now use procedurally-generated 256×256 (4×4 grid of 64×64 frames) walk-cycle sprite sheets —
+  no external AI images. Generator: `artifacts/game/scripts/generate-characters.mjs` (humans,
+  palette-driven via `scripts/lib/characterBuilder.mjs`) and `generate-barsik-sprite.mjs` (cat).
+  Re-run all with `pnpm --filter @workspace/game run gen:sprites`. To add a new character, add a
+  palette config entry to `generate-characters.mjs` — no new draw code needed.
 
 ## Main menu redesign (in progress)
 

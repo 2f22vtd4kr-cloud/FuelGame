@@ -44,14 +44,25 @@ export interface SpriteSheetMeta {
   rowFor: { left: number; right: number; down: number; up: number };
 }
 
+const WALK_SHEET_META: SpriteSheetMeta = {
+  cols: 4,
+  rows: 4,
+  frameW: 64,
+  frameH: 64,
+  rowFor: { left: 0, right: 1, down: 2, up: 3 },
+};
+
 export const SPRITE_SHEETS: Partial<Record<string, SpriteSheetMeta>> = {
-  char_denis: {
-    cols: 4,
-    rows: 4,
-    frameW: 64,
-    frameH: 64,
-    rowFor: { left: 0, right: 1, down: 2, up: 3 },
-  },
+  char_denis: WALK_SHEET_META,
+  char_anya: WALK_SHEET_META,
+  char_vova: WALK_SHEET_META,
+  char_uncle_seryozha: WALK_SHEET_META,
+  char_petrovich: WALK_SHEET_META,
+  char_marina: WALK_SHEET_META,
+  char_akhmet: WALK_SHEET_META,
+  char_oleg: WALK_SHEET_META,
+  char_lena: WALK_SHEET_META,
+  char_barsik: WALK_SHEET_META,
 };
 
 const loaded = new Map<string, HTMLImageElement>();
