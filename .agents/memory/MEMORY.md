@@ -27,3 +27,4 @@
 - [95-Y main menu redesign](game-main-menu-redesign.md) — "Propaganda Pop" style approved for Lobby.tsx but NOT yet graduated; style guide at docs/design/main-menu-style-guide.md
 - [95-Y sprite generation workflow](game-sprite-generation-workflow.md) — procedural (Node+zlib) sprite sheets for all 10 characters + static map-prop PNGs (bench/tree/hydrant/etc.), same PixelGrid toolkit
 - [Denis sprite canvas design](denis-sprite-canvas.md) — canvas mockup done (DenisSprite.tsx, 4×4 grid, all dirs); next session: export to char_denis.png via node-canvas
+- [Import setup quirks](import-setup-quirks.md) — after re-import, run `pnpm install`; a duplicate un-removable "artifacts/api-server: API Server" workflow is harmless
