@@ -1,7 +1,7 @@
 // ─── §3.2 / §3.3 / §3.5 / §3.6 Match Reward Calculation ────────────────────
 
 import type { GameState, Player } from './types';
-import { loadProfile, saveProfile, xpToTier, moscowDateString, type PlayerProfile } from './profile';
+import { loadProfile, saveProfile, xpToTier, moscowDateString, moscowYesterdayString, type PlayerProfile } from './profile';
 import { ACHIEVEMENT_MAP, type AchievementDef } from '../data/achievements';
 import { getDailyChallenge, type ChallengeDef } from '../data/dailyChallenges';
 
@@ -74,6 +74,42 @@ export function applyMatchRewards(gs: GameState): MatchRewards {
     profile.survivalStreak = 0;
   }
 
+  // ── §3.6 Additional cumulative achievement-tracking stats ─────────────────
+  profile.winStreak = iWon ? (profile.winStreak ?? 0) + 1 : 0;
+
+  if (localPlayer) {
+    if (iWon) {
+      profile.winsByCharacter = profile.winsByCharacter ?? {};
+      profile.winsByCharacter[localPlayer.character] = (profile.winsByCharacter[localPlayer.character] ?? 0) + 1;
+
+      profile.winRolesAchieved = profile.winRolesAchieved ?? { khozain: false, slivshchik: false, neutral: false };
+      if (localPlayer.neutralRole) profile.winRolesAchieved.neutral = true;
+      else if (localPlayer.role === 'khozain') profile.winRolesAchieved.khozain = true;
+      else if (localPlayer.role === 'slivshchik') profile.winRolesAchieved.slivshchik = true;
+    }
+
+    if (localPlayer.wasEjected) {
+      profile.totalEjections = (profile.totalEjections ?? 0) + 1;
+      if (localPlayer.role !== 'slivshchik') {
+        profile.totalInnocentEjections = (profile.totalInnocentEjections ?? 0) + 1;
+      }
+    }
+
+    profile.totalVentUses = (profile.totalVentUses ?? 0) + (localPlayer.ventUsesThisMatch ?? 0);
+    profile.totalPipeBurstFixes = (profile.totalPipeBurstFixes ?? 0) + (localPlayer.pipeBurstFixesThisMatch ?? 0);
+    profile.totalShawarmaBought = (profile.totalShawarmaBought ?? 0) + (localPlayer.shawarmaBoughtThisMatch ?? 0);
+
+    if (localPlayer.sabotageUsesThisMatch) {
+      profile.sabotageUseCounts = profile.sabotageUseCounts ?? {};
+      profile.sabotageTypesEverUsed = profile.sabotageTypesEverUsed ?? [];
+      for (const [key, count] of Object.entries(localPlayer.sabotageUsesThisMatch)) {
+        profile.sabotageUseCounts[key] = (profile.sabotageUseCounts[key] ?? 0) + (count ?? 0);
+        if (!profile.sabotageTypesEverUsed.includes(key)) profile.sabotageTypesEverUsed.push(key);
+      }
+    }
+  }
+  profile.totalImmunityTicketsUsedCum = (profile.totalImmunityTicketsUsedCum ?? 0) + (gs.immunityTicketsUsedThisMatch ?? 0);
+
   // ── Daily challenge ───────────────────────────────────────────────────────
   const today = moscowDateString();
   const dailyDef = getDailyChallenge(today);
@@ -96,8 +132,13 @@ export function applyMatchRewards(gs: GameState): MatchRewards {
     if (profile.daily.progress >= dailyDef.target) {
       profile.daily.completed = true;
       dailyCompleted = true;
-      babki += 200;    // §3.5 daily reward
-      xp += 200;
+      babki += 50;    // §3.5 daily reward (spec: 50 BP XP / matching Бабки amount)
+      xp += 50;
+
+      // §3.6 "Постоянный Жилец" — consecutive daily-challenge completion streak
+      const yesterday = moscowYesterdayString();
+      profile.dailyStreak = profile.lastDailyCompletedDate === yesterday ? (profile.dailyStreak ?? 0) + 1 : 1;
+      profile.lastDailyCompletedDate = today;
     }
   }
 
@@ -155,6 +196,18 @@ export function applyMatchRewards(gs: GameState): MatchRewards {
     dailyHatUnlocked,
     isFirstWin,
   };
+}
+
+/** Immediately unlock a single achievement outside the match-end flow (e.g. UI button presses). */
+export function unlockAchievementNow(id: string): AchievementDef | null {
+  const def = ACHIEVEMENT_MAP[id];
+  if (!def) return null;
+  const profile = loadProfile();
+  if (profile.achievements.includes(id)) return null;
+  profile.achievements.push(id);
+  profile.babki += def.babkiReward;
+  saveProfile(profile);
+  return def;
 }
 
 /** §9.3 Fire-and-forget leaderboard score submission */
@@ -327,9 +380,60 @@ function checkAchievements(
 
   // Immunity ticket
   if (gs.immunityTicketsUsedThisMatch > 0) unlock('immunity_user');
-  if ((profile.totalMatchesPlayed ?? 0) >= 1) {
-    // immunity_10 would need cumulative tracking — skip for now (unlock on profile total)
-  }
+  if ((profile.totalImmunityTicketsUsedCum ?? 0) >= 10) unlock('immunity_10');
+
+  // Win streak
+  if ((profile.winStreak ?? 0) >= 3) unlock('win_streak_3');
+
+  // Shawarma
+  if ((profile.totalShawarmaBought ?? 0) >= 10) unlock('shawarma_addict');
+  if (iWon && player?.atShawarmaDuringVote) unlock('shawarma_alibi');
+
+  // Ejections
+  if ((profile.totalInnocentEjections ?? 0) >= 5) unlock('alarm_victim');
+  if (player?.wasEjected && player.role === 'khozain' && !player.neutralRole) unlock('innocent_5');
+  if ((profile.totalEjections ?? 0) >= 10) unlock('ejected_10');
+
+  // Барсик-Свидетель
+  if (player?.neutralRole === 'barsik' && player.barsikWitnessSuccess) unlock('barsik_witness');
+
+  // Sabotage
+  if ((profile.sabotageUseCounts?.['babushka_cerberus'] ?? 0) >= 10) unlock('grandma_sabotage_10');
+  if ((profile.totalPipeBurstFixes ?? 0) >= 3) unlock('fix_pipe_burst');
+  const ALL_SABOTAGE_KEYS = ['babushka_cerberus', 'pipe_burst', 'chat_offline', 'alarm_chaos'];
+  if (ALL_SABOTAGE_KEYS.every(k => (profile.sabotageTypesEverUsed ?? []).includes(k))) unlock('all_sabotages');
+
+  // Character-specific wins
+  if ((profile.winsByCharacter?.['uncle_seryozha'] ?? 0) >= 3) unlock('uncle_seryozha_win');
+  if ((profile.winsByCharacter?.['denis'] ?? 0) >= 5) unlock('denis_taxi');
+
+  // Fuel-linked account
+  if (profile.fuelBotLinked) unlock('fuel_linked');
+
+  // Тихий Сливщик — won as slivshchik with zero votes received across the whole match
+  if (isSliv && iWon && (player?.votesReceivedThisMatch ?? 0) === 0) unlock('never_suspected');
+
+  // Ambush spree
+  if (isSliv && (player?.ambushesThisMatch ?? 0) >= 5) unlock('ambush_5');
+
+  // Поймал с канистрой
+  if (player?.canisterCatchSuccess) unlock('canister_catch');
+
+  // Daily streak
+  if ((profile.dailyStreak ?? 0) >= 3) unlock('daily_streak_3');
+
+  // Win in all 3 role categories
+  const wra = profile.winRolesAchieved;
+  if (wra?.khozain && wra?.slivshchik && wra?.neutral) unlock('win_all_roles');
+
+  // Nightmare difficulty win
+  if (iWon && gs.botDifficulty === 'nightmare') unlock('nightmare_win');
+
+  // Dumpster vent usage
+  if ((profile.totalVentUses ?? 0) >= 10) unlock('vent_10');
+
+  // Premium Battle Pass purchase
+  if (profile.battlePassPremium) unlock('premium_pass');
 
   // Character-specific: Крипто-Вова ejected on first meeting (short match)
   if (player?.character === 'vova' && !player.isAlive && gs.time < 120) {

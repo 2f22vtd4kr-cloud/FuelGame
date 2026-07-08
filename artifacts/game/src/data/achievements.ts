@@ -128,6 +128,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     description: 'Победи в матчах за все 3 основные роли (Хозяин, Сливщик, нейтрал)' },
   { id: 'nightmare_win',  title: 'Победа над Кошмаром', emoji: '🌑', babkiReward: 750,
     description: 'Победи на сложности Кошмар' },
+  { id: 'premium_pass',   title: 'Премиум Двора',       emoji: '💎', babkiReward: 300,
+    description: 'Купи Премиум Боевой Пропуск' },
 ];
 
 export const ACHIEVEMENT_MAP = Object.fromEntries(

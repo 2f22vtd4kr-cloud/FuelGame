@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import type { GameState, Player } from '../game/types';
 import { CHARACTERS } from '../data/characters';
 import { HAT_MAP } from '../data/cosmetics';
-import { applyMatchRewards, type MatchRewards } from '../game/rewards';
+import { applyMatchRewards, unlockAchievementNow, type MatchRewards } from '../game/rewards';
 import { loadProfile } from '../game/profile';
 
 interface Props {
@@ -169,6 +169,9 @@ export default function GameResults({ gs, onPlayAgain }: Props) {
     link.download = '95-backstab-result.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
+
+    // §3.6 "Вирусный Момент" achievement
+    unlockAchievementNow('share_card');
   }
 
   return (

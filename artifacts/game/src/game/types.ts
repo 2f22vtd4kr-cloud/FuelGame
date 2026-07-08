@@ -253,6 +253,19 @@ export interface Player {
   botPath: Vec2[];           // remaining world-space waypoints (head = next destination)
   botReplanTimer: number;    // seconds until forced replan
   botPathTarget: Vec2 | null; // target pos when path was last computed (change detection)
+  // §3.6 Achievement tracking (per-match counters, consumed by rewards.ts at match end)
+  ambushesThisMatch: number;          // successful ambushes this match (as slivshchik)
+  ventUsesThisMatch: number;          // dumpster vent teleports used this match (as slivshchik)
+  sabotageUsesThisMatch: Partial<Record<SabotageKey, number>>; // sabotages triggered this match (human slivshchik)
+  pipeBurstFixesThisMatch: number;    // pipe_burst sabotage fully fixed by this player this match
+  wasEjected: boolean;                // ejected at a сходка this match
+  votesReceivedThisMatch: number;     // total votes received across all сходки this match
+  atShawarmaDuringVote: boolean;      // was standing at the shawarma stand the moment a сходка was called
+  shawarmaBoughtThisMatch: number;    // shawarma task completions this match
+  canisterCatchTargetId: string | null;  // slivshchik reported after being seen with a canister
+  canisterCatchSuccess: boolean;      // that reported slivshchik was actually ejected
+  barsikCaughtSiphonerId: string | null; // slivshchik id Барсик meowed at during an active siphon
+  barsikWitnessSuccess: boolean;      // that siphoner was actually ejected
 }
 
 // ─── Bodies (left behind by ambushed players) ─────────────────────────────────

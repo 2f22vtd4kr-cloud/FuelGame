@@ -11,6 +11,8 @@ export interface HatDef {
   currency: CurrencyType;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   battlePassTier?: number;
+  /** §3.3 True = only unlocked at this tier for players who bought Premium Боевой Пропуск */
+  premiumOnly?: boolean;
 }
 
 export const HATS: HatDef[] = [
@@ -37,9 +39,11 @@ export const HATS: HatDef[] = [
   { id: 'stars_santa',  name: 'Дед Мороз',        emoji: '🎅', description: 'Дед Мороз тоже сливает. По старой цене.', cost: 80, currency: 'stars', rarity: 'epic' },
 
   // ── Battle Pass rewards ────────────────────────────────────────────────────
-  { id: 'bp_tier3',     name: 'Кепка Пропуска',   emoji: '🏷️', description: 'Боевой Пропуск, уровень 3.', cost: 0, currency: 'free', rarity: 'common', battlePassTier: 3 },
-  { id: 'bp_tier7',     name: 'Бейсболка БП',     emoji: '🧤', description: 'Боевой Пропуск, уровень 7.', cost: 0, currency: 'free', rarity: 'rare', battlePassTier: 7 },
-  { id: 'bp_tier10',    name: 'Шлем Сезона',      emoji: '⚔️', description: 'Боевой Пропуск, уровень 10.', cost: 0, currency: 'free', rarity: 'epic', battlePassTier: 10 },
+  // Free track reward (available to everyone once the tier is reached)
+  { id: 'bp_tier3',     name: 'Кепка Пропуска',   emoji: '🏷️', description: 'Боевой Пропуск, уровень 3 (бесплатная линия).', cost: 0, currency: 'free', rarity: 'common', battlePassTier: 3 },
+  // Premium track rewards (require Premium Боевой Пропуск, in addition to reaching the tier)
+  { id: 'bp_tier7',     name: 'Бейсболка БП',     emoji: '🧤', description: 'Боевой Пропуск, уровень 7 (Премиум).', cost: 0, currency: 'free', rarity: 'rare', battlePassTier: 7, premiumOnly: true },
+  { id: 'bp_tier10',    name: 'Шлем Сезона',      emoji: '⚔️', description: 'Боевой Пропуск, уровень 10 (Премиум).', cost: 0, currency: 'free', rarity: 'epic', battlePassTier: 10, premiumOnly: true },
 
   // ── Special (fuel_linked) ──────────────────────────────────────────────────
   { id: 'golden_talono', name: 'Золотой Москвич', emoji: '🥇', description: 'За привязку @fuel_fuel_fuel_bot.', cost: 0, currency: 'fuel_linked', rarity: 'legendary' },
@@ -67,6 +71,8 @@ export interface PetDef {
   currency: CurrencyType;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   battlePassTier?: number;
+  /** §3.3 True = only unlocked at this tier for players who bought Premium Боевой Пропуск */
+  premiumOnly?: boolean;
   animation: string; // flavour text describing the pet's idle animation
 }
 
@@ -103,6 +109,16 @@ export const PETS: PetDef[] = [
     cost: 0, currency: 'free', rarity: 'rare',
     animation: 'прыгает',
     battlePassTier: 5,
+  },
+  {
+    id: 'vip_husky',
+    name: 'ВИП-Хаски',
+    emoji: '🐺',
+    description: 'Смотрит на всех свысока. Премиум-эксклюзив, уровень 8.',
+    cost: 0, currency: 'free', rarity: 'epic',
+    animation: 'важно вышагивает',
+    battlePassTier: 8,
+    premiumOnly: true,
   },
   {
     id: 'barsik_pet',
@@ -160,6 +176,7 @@ export const PETS: PetDef[] = [
     cost: 0, currency: 'free', rarity: 'legendary',
     animation: 'проходит сквозь стены',
     battlePassTier: 15,
+    premiumOnly: true,
   },
 ];
 

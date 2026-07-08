@@ -197,6 +197,18 @@ export function startGame(
       botPath: [],
       botReplanTimer: 0,
       botPathTarget: null,
+      ambushesThisMatch: 0,
+      ventUsesThisMatch: 0,
+      sabotageUsesThisMatch: {},
+      pipeBurstFixesThisMatch: 0,
+      wasEjected: false,
+      votesReceivedThisMatch: 0,
+      atShawarmaDuringVote: false,
+      shawarmaBoughtThisMatch: 0,
+      canisterCatchTargetId: null,
+      canisterCatchSuccess: false,
+      barsikCaughtSiphonerId: null,
+      barsikWitnessSuccess: false,
     };
   });
 
@@ -236,21 +248,17 @@ export function startGame(
     });
   }
 
-  // §3.1.3 Neutral role assignment — in 6+ player games, one khozain gets a neutral role
-  if (playerCount >= 6) {
-    const neutralRoles: NeutralRole[] = ['barsik', 'policeman', 'janitor'];
-    // Pick a random khozain to receive a neutral role
+  // §3.1.3 Neutral role assignment — 8-player lobbies only, exactly 1 random neutral role.
+  // Барсик is a rare 5% draw; the remaining 95% splits evenly between Участковый and Дворник.
+  if (playerCount >= 8) {
     const khozainIndices = players
       .map((p, i) => ({ p, i }))
       .filter(({ p }) => p.role === 'khozain')
       .map(({ i }) => i);
     if (khozainIndices.length > 0) {
-      // Prefer assigning 'barsik' neutral to whoever picked the barsik character
-      const barsikIdx = players.findIndex(p => p.character === 'barsik' && p.role === 'khozain');
-      const targetIdx = barsikIdx >= 0 ? barsikIdx : khozainIndices[Math.floor(rng() * khozainIndices.length)];
-      const pickedRole = barsikIdx >= 0
-        ? 'barsik'
-        : neutralRoles[Math.floor(rng() * neutralRoles.length)];
+      const targetIdx = khozainIndices[Math.floor(rng() * khozainIndices.length)];
+      const roll = rng();
+      const pickedRole: NeutralRole = roll < 0.05 ? 'barsik' : (roll < 0.525 ? 'policeman' : 'janitor');
       players[targetIdx].neutralRole = pickedRole;
     }
   }

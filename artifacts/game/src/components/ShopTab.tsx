@@ -1,7 +1,8 @@
 // §3.4 Cosmetics Shop Tab + §10.3 Telegram Stars purchase flow
 import React, { useState } from 'react';
 import { HATS, PETS, CAR_SKINS, RARITY_COLORS, type HatDef, type PetDef, type CarSkinDef } from '../data/cosmetics';
-import { loadProfile, saveProfile } from '../game/profile';
+import { loadProfile, saveProfile, XP_PER_TIER } from '../game/profile';
+import { unlockAchievementNow } from '../game/rewards';
 
 interface Props {
   onProfileChange: () => void;
@@ -18,7 +19,9 @@ declare global {
   }
 }
 
-type ShopSection = 'hats' | 'pets' | 'cars';
+type ShopSection = 'hats' | 'pets' | 'cars' | 'battlepass';
+
+const PREMIUM_PASS_COST_STARS = 150;
 
 export default function ShopTab({ onProfileChange }: Props) {
   const [profile, setProfile] = useState(() => loadProfile());
@@ -143,6 +146,60 @@ export default function ShopTab({ onProfileChange }: Props) {
     showToast(`Скин «${skin.name}» куплен!`, true);
   }
 
+  // §3.3 Battle Pass premium purchase
+  async function buyPremiumPass() {
+    const tg = window.Telegram?.WebApp;
+    const onPaid = () => {
+      const p = loadProfile();
+      p.battlePassPremium = true;
+      saveProfile(p);
+      refresh();
+      showToast('Премиум Боевой Пропуск активирован! 💎', true);
+    };
+
+    if (!tg?.openInvoice) {
+      // Dev/offline fallback so the flow is testable without Telegram
+      onPaid();
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/stars/invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemType: 'battlepass', itemId: 'premium_pass', stars: PREMIUM_PASS_COST_STARS, name: 'Премиум Боевой Пропуск' }),
+      });
+      if (res.ok) {
+        const { invoiceLink } = await res.json() as { invoiceLink: string };
+        tg.openInvoice(invoiceLink, (status: string) => {
+          if (status === 'paid') onPaid();
+          else if (status === 'cancelled') showToast('Покупка отменена', false);
+        });
+        return;
+      }
+    } catch { /* fall through */ }
+
+    tg.openInvoice(`battlepass_premium_pass_${PREMIUM_PASS_COST_STARS}`, (status: string) => {
+      if (status === 'paid') onPaid();
+      else if (status === 'cancelled') showToast('Покупка отменена', false);
+    });
+  }
+
+  // §3.6 "Талоновед" achievement stub — manual confirmation of @fuel_fuel_fuel_bot linking
+  function linkFuelBot() {
+    const p = loadProfile();
+    if (p.fuelBotLinked) return;
+    p.fuelBotLinked = true;
+    if (!p.purchasedHats.includes('golden_talono')) p.purchasedHats.push('golden_talono');
+    if (!p.purchasedCarSkins.includes('golden_moskvich')) p.purchasedCarSkins.push('golden_moskvich');
+    if (!p.purchasedPets.includes('barsik_pet')) p.purchasedPets.push('barsik_pet');
+    saveProfile(p);
+    // §3.6 "Талоновед" achievement grants its own +1000 babki reward — don't double-pay here.
+    unlockAchievementNow('fuel_linked');
+    refresh();
+    showToast('Аккаунт привязан! Золотой Москвич и бонусы разблокированы 🥇', true);
+  }
+
   // ── Filtering ─────────────────────────────────────────────────────────────────
 
   const filteredHats = HATS.filter(hat => {
@@ -150,7 +207,9 @@ export default function ShopTab({ onProfileChange }: Props) {
     if (selectedFilter === 'babki') return hat.currency === 'babki';
     if (selectedFilter === 'stars') return hat.currency === 'stars';
     if (hat.currency === 'free' && hat.battlePassTier !== undefined) {
-      return profile.battlePassTier >= (hat.battlePassTier ?? 0) || profile.purchasedHats.includes(hat.id);
+      const tierReached = profile.battlePassTier >= (hat.battlePassTier ?? 0);
+      const unlocked = hat.premiumOnly ? tierReached && profile.battlePassPremium : tierReached;
+      return unlocked || profile.purchasedHats.includes(hat.id);
     }
     if (hat.currency === 'daily') return profile.purchasedHats.includes(hat.id);
     return true;
@@ -161,7 +220,9 @@ export default function ShopTab({ onProfileChange }: Props) {
     if (selectedFilter === 'babki') return pet.currency === 'babki';
     if (selectedFilter === 'stars') return pet.currency === 'stars';
     if (pet.currency === 'free' && pet.battlePassTier !== undefined) {
-      return profile.battlePassTier >= (pet.battlePassTier ?? 0) || profile.purchasedPets.includes(pet.id);
+      const tierReached = profile.battlePassTier >= (pet.battlePassTier ?? 0);
+      const unlocked = pet.premiumOnly ? tierReached && profile.battlePassPremium : tierReached;
+      return unlocked || profile.purchasedPets.includes(pet.id);
     }
     if (pet.currency === 'daily') return profile.purchasedPets.includes(pet.id);
     return true;
@@ -214,16 +275,18 @@ export default function ShopTab({ onProfileChange }: Props) {
       }}>⭐ {cost}</button>
     );
     if (currency === 'fuel_linked') return (
-      <div style={{ fontSize: 8, color: '#FF9800', marginTop: 4, textAlign: 'center' }}>
-        🔗 @fuel_fuel_fuel_bot
-      </div>
+      <button onClick={linkFuelBot} style={{
+        marginTop: 4, padding: '4px 10px',
+        background: 'rgba(255,152,0,0.15)', border: '1px solid rgba(255,152,0,0.4)',
+        borderRadius: 6, fontSize: 8, color: '#FF9800', cursor: 'pointer', fontWeight: 'bold',
+      }}>🔗 Привязать</button>
     );
     return null;
   }
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
-  const SECTION_LABELS: Record<ShopSection, string> = { hats: '🧢 Шапки', pets: '🐾 Питомцы', cars: '🚗 Авто' };
+  const SECTION_LABELS: Record<ShopSection, string> = { hats: '🧢 Шапки', pets: '🐾 Питомцы', cars: '🚗 Авто', battlepass: '🎫 Пропуск' };
 
   return (
     <div style={{ width: '100%', maxWidth: 380 }}>
@@ -258,7 +321,7 @@ export default function ShopTab({ onProfileChange }: Props) {
 
       {/* Section tabs */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-        {(['hats', 'pets', 'cars'] as ShopSection[]).map(s => (
+        {(['hats', 'pets', 'cars', 'battlepass'] as ShopSection[]).map(s => (
           <button key={s} onClick={() => setSection(s)} style={{
             flex: 1, padding: '7px 4px', fontSize: 11, borderRadius: 9,
             background: section === s ? 'rgba(255,87,34,0.2)' : 'rgba(255,255,255,0.04)',
@@ -293,7 +356,12 @@ export default function ShopTab({ onProfileChange }: Props) {
       {section === 'hats' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
           {filteredHats.map(hat => {
-            const owned = profile.purchasedHats.includes(hat.id);
+            // Free Battle Pass tier rewards are auto-claimed once their unlock condition is met
+            const tierUnlocked = hat.currency === 'free' && hat.battlePassTier !== undefined &&
+              (hat.premiumOnly
+                ? profile.battlePassTier >= hat.battlePassTier && profile.battlePassPremium
+                : profile.battlePassTier >= hat.battlePassTier);
+            const owned = profile.purchasedHats.includes(hat.id) || tierUnlocked;
             const equipped = profile.equippedHat === hat.id;
             const rarityColor = RARITY_COLORS[hat.rarity];
             return (
@@ -334,7 +402,12 @@ export default function ShopTab({ onProfileChange }: Props) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
             {filteredPets.map(pet => {
-              const owned = profile.purchasedPets.includes(pet.id);
+              // Free Battle Pass tier rewards are auto-claimed once their unlock condition is met
+              const tierUnlocked = pet.currency === 'free' && pet.battlePassTier !== undefined &&
+                (pet.premiumOnly
+                  ? profile.battlePassTier >= pet.battlePassTier && profile.battlePassPremium
+                  : profile.battlePassTier >= pet.battlePassTier);
+              const owned = profile.purchasedPets.includes(pet.id) || tierUnlocked;
               const equipped = profile.equippedPet === pet.id;
               const rarityColor = RARITY_COLORS[pet.rarity];
               return (
@@ -420,6 +493,87 @@ export default function ShopTab({ onProfileChange }: Props) {
           </div>
         </>
       )}
+
+      {/* ── §3.3 Battle Pass tab ── */}
+      {section === 'battlepass' && (() => {
+        const xpIntoTier = profile.battlePassXP - profile.battlePassTier * XP_PER_TIER;
+        const tierPct = Math.min(100, Math.round((xpIntoTier / XP_PER_TIER) * 100));
+        const maxed = profile.battlePassTier >= 50;
+        const upcoming = [...HATS, ...PETS]
+          .filter((item): item is (HatDef | PetDef) & { battlePassTier: number } => item.battlePassTier !== undefined)
+          .sort((a, b) => a.battlePassTier - b.battlePassTier);
+
+        return (
+          <div>
+            <div style={{
+              padding: '14px 14px', marginBottom: 12,
+              background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.25)', borderRadius: 12,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                <span style={{ fontSize: 15, fontWeight: 'bold', color: '#FFD700' }}>
+                  🎫 Уровень {profile.battlePassTier}/50
+                </span>
+                <span style={{ fontSize: 10, color: profile.battlePassPremium ? '#64B5F6' : '#757575', fontWeight: 'bold' }}>
+                  {profile.battlePassPremium ? '💎 Премиум активен' : 'Бесплатная линия'}
+                </span>
+              </div>
+              <div style={{ width: '100%', height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                <div style={{
+                  width: `${maxed ? 100 : tierPct}%`, height: '100%',
+                  background: 'linear-gradient(90deg, #FF9800, #FFD700)',
+                }} />
+              </div>
+              <div style={{ fontSize: 9, color: '#9E9E9E', marginTop: 4 }}>
+                {maxed ? 'Максимальный уровень достигнут!' : `${xpIntoTier} / ${XP_PER_TIER} XP до следующего уровня`}
+              </div>
+            </div>
+
+            {!profile.battlePassPremium && (
+              <button onClick={buyPremiumPass} style={{
+                width: '100%', padding: '12px', marginBottom: 14,
+                background: 'rgba(100,181,246,0.15)', border: '1.5px solid rgba(100,181,246,0.5)',
+                borderRadius: 12, fontSize: 13, fontWeight: 'bold', color: '#64B5F6', cursor: 'pointer',
+              }}>
+                💎 Купить Премиум Пропуск — ⭐ {PREMIUM_PASS_COST_STARS}
+              </button>
+            )}
+
+            <div style={{ fontSize: 10, color: '#607D8B', marginBottom: 8, lineHeight: 1.4 }}>
+              Бесплатная линия открывает часть наград по уровням. Премиум открывает эксклюзивные шапки и питомцев на тех же уровнях.
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {upcoming.map(item => {
+                const reached = profile.battlePassTier >= item.battlePassTier;
+                const unlocked = item.premiumOnly ? reached && profile.battlePassPremium : reached;
+                return (
+                  <div key={item.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
+                    background: unlocked ? 'rgba(76,175,80,0.1)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${unlocked ? 'rgba(76,175,80,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: 10,
+                  }}>
+                    <div style={{
+                      width: 30, textAlign: 'center', fontSize: 11, fontWeight: 'bold',
+                      color: reached ? '#FFD700' : '#757575',
+                    }}>
+                      {item.battlePassTier}
+                    </div>
+                    <div style={{ fontSize: 20 }}>{item.emoji}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 11, color: '#FFF', fontWeight: 'bold' }}>{item.name}</div>
+                      <div style={{ fontSize: 9, color: item.premiumOnly ? '#64B5F6' : '#81C784' }}>
+                        {item.premiumOnly ? '💎 Премиум' : '🆓 Бесплатно'}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 14 }}>{unlocked ? '✅' : '🔒'}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* §10.3 Stars info */}
       <div style={{

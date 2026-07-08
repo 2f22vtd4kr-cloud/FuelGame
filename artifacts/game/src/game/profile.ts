@@ -47,6 +47,21 @@ export interface PlayerProfile {
   volumeSfx: number;
   autoInteract: boolean;
   simplifiedChatWheel: boolean;
+  // §3.6 Cumulative achievement-tracking stats
+  totalInnocentEjections: number;   // ejected while not slivshchik, across all matches
+  totalEjections: number;           // ejected for any reason, across all matches
+  winStreak: number;                // consecutive matches won
+  winsByCharacter: Record<string, number>;
+  sabotageUseCounts: Partial<Record<string, number>>;
+  sabotageTypesEverUsed: string[];
+  totalPipeBurstFixes: number;
+  totalVentUses: number;
+  totalImmunityTicketsUsedCum: number;
+  totalShawarmaBought: number;
+  fuelBotLinked: boolean;
+  dailyStreak: number;
+  lastDailyCompletedDate: string | null;
+  winRolesAchieved: { khozain: boolean; slivshchik: boolean; neutral: boolean };
 }
 
 const DEFAULTS: PlayerProfile = {
@@ -80,6 +95,20 @@ const DEFAULTS: PlayerProfile = {
   volumeSfx: 1.0,
   autoInteract: false,
   simplifiedChatWheel: false,
+  totalInnocentEjections: 0,
+  totalEjections: 0,
+  winStreak: 0,
+  winsByCharacter: {},
+  sabotageUseCounts: {},
+  sabotageTypesEverUsed: [],
+  totalPipeBurstFixes: 0,
+  totalVentUses: 0,
+  totalImmunityTicketsUsedCum: 0,
+  totalShawarmaBought: 0,
+  fuelBotLinked: false,
+  dailyStreak: 0,
+  lastDailyCompletedDate: null,
+  winRolesAchieved: { khozain: false, slivshchik: false, neutral: false },
 };
 
 function genDeviceId(): string {
@@ -134,4 +163,11 @@ export function moscowDateString(): string {
   // Moscow is UTC+3
   const moscow = new Date(now.getTime() + 3 * 60 * 60 * 1000);
   return moscow.toISOString().slice(0, 10);
+}
+
+/** Moscow time date string for "yesterday" — used to detect consecutive daily-challenge streaks */
+export function moscowYesterdayString(): string {
+  const now = new Date();
+  const moscowYesterday = new Date(now.getTime() + 3 * 60 * 60 * 1000 - 24 * 60 * 60 * 1000);
+  return moscowYesterday.toISOString().slice(0, 10);
 }

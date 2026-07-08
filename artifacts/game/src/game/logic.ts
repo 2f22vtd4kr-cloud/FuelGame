@@ -762,6 +762,8 @@ function updateNeutralMechanics(dt: number): void {
         // Knock the canister — interrupt the siphon, leaving evidence
         const siphoner = gs.players.find(p => p.id === witnessedSiphon.siphoner);
         if (siphoner) {
+          // §3.6 "Барсик-Свидетель" achievement: remember who Барсик caught mid-siphon
+          player.barsikCaughtSiphonerId = siphoner.id;
           dropCanister(siphoner, witnessedSiphon, false);
           stopSiphon(witnessedSiphon, siphoner, 'interrupt');
           // Add to meeting chat if meeting is active, else add system message
@@ -800,6 +802,14 @@ export function triggerBarsikMeow(playerId: string): void {
   player.emote = '😺';
   player.emoteTimer = 4;
   audio.play('alarm_button');
+  // §3.6 "Барсик-Свидетель" achievement: remember who Барсик caught mid-siphon
+  const witnessedSiphon = gs.cars.find(car => {
+    if (car.siphonPhase !== 2) return false;
+    const dx = car.pos.x - player.pos.x;
+    const dy = car.pos.y - player.pos.y;
+    return Math.sqrt(dx * dx + dy * dy) < 200;
+  });
+  if (witnessedSiphon?.siphoner) player.barsikCaughtSiphonerId = witnessedSiphon.siphoner;
   if (gs.meeting) {
     gs.meeting.chatMessages.push({
       playerId,
@@ -946,6 +956,7 @@ function completeTask(task: TaskInstance, player: Player): void {
     // §2.4 Shawarma speed boost — buying shawarma gives 10s speed boost
     if (task.defKey === 'shawarma') {
       player.speedBoostTimer = SHAWARMA_SPEED_BOOST_DURATION;
+      player.shawarmaBoughtThisMatch = (player.shawarmaBoughtThisMatch ?? 0) + 1;
       audio.play('shawarma_buy');
       const flavorText = TASK_FLAVOR.shawarma ?? '';
       setPrompt(`${flavorText} +${taskDef.unityReward}% единства. Скорость ×1.35 на 10с! 🏃`, 3);
@@ -990,6 +1001,7 @@ export function triggerSabotage(key: SabotageKey): void {
   if (isSabotageActive(key)) return; // already active
 
   player.sabotageCooldown = SABOTAGE_COOLDOWNS[key];
+  player.sabotageUsesThisMatch[key] = (player.sabotageUsesThisMatch[key] ?? 0) + 1;
   spawnSabotage(key);
   setPrompt(getSabotageActivationPrompt(key), 4);
 }
@@ -1078,6 +1090,7 @@ function updateSabotages(dt: number, input: InputState): void {
 
               if (sab.valve1Progress >= VALVE_FIX_TIME && sab.valve2Progress >= VALVE_FIX_TIME) {
                 sab.isResolved = true;
+                if (player.isHuman) player.pipeBurstFixesThisMatch = (player.pipeBurstFixesThisMatch ?? 0) + 1;
                 setPrompt('✅ Труба починена! Машины снова доступны.', 3);
                 audio.play('task_complete');
               }
@@ -1268,6 +1281,7 @@ function updateInteractions(dt: number, input: InputState): void {
           }
           player.pos = { ...DUMPSTER_POSITIONS[bestIdx] };
           player.ventCooldown = VENT_COOLDOWN;
+          player.ventUsesThisMatch = (player.ventUsesThisMatch ?? 0) + 1;
           player.ventFlashTimer = VENT_FLASH_DURATION; // §3.1.2 visual teleport flash
           audio.play('ui_click');
           setPrompt('💨 Нырнул в мусорку! Вынырнул с другой стороны.', 2);
@@ -1359,6 +1373,8 @@ function updateInteractions(dt: number, input: InputState): void {
       setPrompt(`⚡ [E] Созвать сходку — видел ${canisterSlivshchik.name} с канистрой!`, 0.2);
       if (input.interact && !input.prevInteract) {
         audio.play('alarm_button');
+        // §3.6 "Поймал с Канистрой" achievement: remember who was reported
+        player.canisterCatchTargetId = canisterSlivshchik.id;
         callMeeting(player.id, 'alarm');
         return;
       }
@@ -1576,6 +1592,7 @@ function executeAmbush(killer: Player, victim: Player): void {
   killer.ambushTarget = null;
   killer.ambushChargeTimer = 0;
   killer.ambushCooldown = AMBUSH_COOLDOWN;
+  killer.ambushesThisMatch = (killer.ambushesThisMatch ?? 0) + 1;
   audio.play('ambush');
   if (victim.isHuman) audio.play('player_death');
   else audio.play('bot_death');
@@ -1766,6 +1783,13 @@ export function callMeeting(callerId: string, reason: 'alarm' | 'body' | 'draine
   }
 
   const alive = gs.players.filter(p => p.isAlive);
+  // §3.6 "Шаверма-Алиби" achievement: was anyone at the shawarma stand the moment this сходка was called?
+  const shawarmaTaskForAlibi = gs.tasks.find(t => t.defKey === 'shawarma');
+  if (shawarmaTaskForAlibi) {
+    for (const p of alive) {
+      if (dist(p.pos, shawarmaTaskForAlibi.pos) < 100) p.atShawarmaDuringVote = true;
+    }
+  }
   alive.forEach((p, i) => {
     const spawn = MEETING_SPAWNS[i % MEETING_SPAWNS.length];
     p.pos = { x: spawn.x + (Math.random() - 0.5) * 15, y: spawn.y + (Math.random() - 0.5) * 15 };
@@ -1898,6 +1922,12 @@ function resolveMeeting(): void {
     if (vote.targetId) tally[vote.targetId] = (tally[vote.targetId] ?? 0) + 1;
   }
 
+  // §3.6 "Тихий Сливщик" achievement: track total votes received this match, win or lose
+  for (const [pid, count] of Object.entries(tally)) {
+    const votedPlayer = gs.players.find(p => p.id === pid);
+    if (votedPlayer) votedPlayer.votesReceivedThisMatch = (votedPlayer.votesReceivedThisMatch ?? 0) + count;
+  }
+
   let maxVotes = 0;
   let ejectedId: string | null = null;
   let tie = false;
@@ -1917,6 +1947,7 @@ function resolveMeeting(): void {
     const ejected = gs.players.find(p => p.id === ejectedId);
     if (ejected) {
       ejected.isAlive = false;
+      ejected.wasEjected = true;
       const isSlivshchik = ejected.role === 'slivshchik';
       m.ejectionText = getEjectionText(ejected.character, isSlivshchik, ejected.neutralRole);
       audio.play('ejection');
@@ -1928,6 +1959,12 @@ function resolveMeeting(): void {
             if (voter) voter.correctVotes = (voter.correctVotes ?? 0) + 1;
           }
         }
+        // §3.6 "Поймал с Канистрой" / "Барсик-Свидетель": did a reported/witnessed
+        // slivshchik actually get ejected this meeting?
+        const reporter = gs.players.find(p => p.canisterCatchTargetId === ejectedId);
+        if (reporter) reporter.canisterCatchSuccess = true;
+        const barsikWitness = gs.players.find(p => p.neutralRole === 'barsik' && p.barsikCaughtSiphonerId === ejectedId);
+        if (barsikWitness) barsikWitness.barsikWitnessSuccess = true;
       }
       // §9.2 Backstab Moment: local player being ejected is dramatic
       if (ejectedId === gs.localPlayerId && !gs.backstabMoment) {
