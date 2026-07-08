@@ -30,6 +30,13 @@ export class GameRoom {
   private saveInterval: ReturnType<typeof setInterval> | null = null;
   private lastTickMs = Date.now();
 
+  // §5.4 Reconnection timing
+  private gameStartWallTime = 0;
+  private rejoinTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+
+  // §5.3 Meeting-sync pause: freeze broadcast at 'play' for 200ms when meeting first starts
+  private meetingFreezeUntil: number | null = null;
+
   settings: { numPlayers: number; numSlivshchiki: number };
 
   /**
@@ -116,6 +123,14 @@ export class GameRoom {
     }, 16);
 
     this.broadcastInterval = setInterval(() => {
+      // §5.3 Meeting-sync pause: hold at 'play' for 200ms when meeting first triggers
+      if (this.meetingFreezeUntil !== null) {
+        if (Date.now() < this.meetingFreezeUntil) {
+          this.broadcast({ type: 'state', gs: { ...this.state, phase: 'play' } });
+          return;
+        }
+        this.meetingFreezeUntil = null; // freeze expired — let meeting through
+      }
       this.broadcast({ type: 'state', gs: this.state });
     }, 50);
 
@@ -152,6 +167,22 @@ export class GameRoom {
       sprint: false, crouch: false,
       emoteIndex: null,
     });
+
+    // §5.4 Rejoin within 60s window: cancel timer and restore player as human
+    const rejoinTimer = this.rejoinTimers.get(info.playerId);
+    if (rejoinTimer) {
+      clearTimeout(rejoinTimer);
+      this.rejoinTimers.delete(info.playerId);
+      setGs(this.state);
+      const p = gs.players.find(pl => pl.id === info.playerId);
+      if (p) {
+        p.isHuman = true;
+        p.name = info.playerName;
+      }
+      this.state = gs;
+      logger.info({ playerId: info.playerId, roomCode: this.roomCode }, 'Player rejoined within window — restored as human');
+    }
+
     this.broadcastLobbyState();
     this.persist();
 
@@ -182,16 +213,40 @@ export class GameRoom {
     if (this.gameStarted) {
       setGs(this.state);
       const p = gs.players.find(pl => pl.id === playerId);
-      if (p) {
-        p.isAlive = false;
-        p.isHuman = false;
+      const playerName = p?.name ?? '';
+      const elapsedSecs = (Date.now() - this.gameStartWallTime) / 1000;
+
+      // §5.4 First 30s: cancel the match if a human player disconnects
+      if (p?.isHuman && elapsedSecs < 30) {
+        logger.info({ playerId, roomCode: this.roomCode, elapsedSecs }, 'Match cancelled — human disconnect within 30s');
+        this.broadcast({ type: 'match_cancelled', reason: 'disconnect_early' });
+        this.stop();
+        this.gameStarted = false;
+        return;
       }
+
+      if (p) {
+        // §5.4 After 30s: AI takeover — keep player alive, hand control to bot
+        p.isHuman = false;
+
+        // §5.4 During Сходка: auto-cast skip vote for disconnected player
+        if (gs.phase === 'meeting' && gs.meeting) {
+          const alreadyVoted = gs.meeting.votes.some(v => v.voterId === playerId);
+          if (!alreadyVoted) {
+            gs.meeting.votes.push({ voterId: playerId, targetId: null }); // skip
+          }
+        }
+      }
+
       this.state = gs;
-      this.broadcast({
-        type: 'player_disconnected',
-        playerId,
-        playerName: p?.name ?? '',
-      });
+      this.broadcast({ type: 'player_disconnected', playerId, playerName });
+
+      // §5.4 Start 60s rejoin window; after it expires the player stays as AI permanently
+      const timer = setTimeout(() => {
+        this.rejoinTimers.delete(playerId);
+        logger.info({ playerId, roomCode: this.roomCode }, 'Rejoin window expired — player remains as AI');
+      }, 60_000);
+      this.rejoinTimers.set(playerId, timer);
     } else {
       if (playerId === this.hostPlayerId) {
         const next = this.clients.values().next().value as ClientInfo | undefined;
@@ -214,6 +269,7 @@ export class GameRoom {
   startGame(): void {
     if (this.gameStarted) return;
     this.gameStarted = true;
+    this.gameStartWallTime = Date.now();
 
     if (this.quickStartTimeout) {
       clearTimeout(this.quickStartTimeout);
@@ -243,6 +299,9 @@ export class GameRoom {
     if (this.broadcastInterval) { clearInterval(this.broadcastInterval); this.broadcastInterval = null; }
     if (this.quickStartTimeout) { clearTimeout(this.quickStartTimeout); this.quickStartTimeout = null; }
     if (this.saveInterval) { clearInterval(this.saveInterval); this.saveInterval = null; }
+    // §5.4 Clear any pending rejoin timers
+    for (const t of this.rejoinTimers.values()) clearTimeout(t);
+    this.rejoinTimers.clear();
     void deleteRoom(this.roomCode);
   }
 
@@ -250,8 +309,14 @@ export class GameRoom {
 
   private tick(dt: number): void {
     setGs(this.state);
+    const prevPhase = gs.phase;
     tickGameMulti(dt, this.inputs);
     this.state = gs;
+
+    // §5.3 Meeting-sync: when phase first transitions play→meeting, freeze broadcast 200ms
+    if (this.state.phase === 'meeting' && prevPhase === 'play' && this.meetingFreezeUntil === null) {
+      this.meetingFreezeUntil = Date.now() + 200;
+    }
   }
 
   // ── Discrete actions ──────────────────────────────────────────────────────

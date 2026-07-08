@@ -31,6 +31,8 @@ export interface NetworkCallbacks {
   onQueueUpdate?: (count: number, total: number) => void;
   /** §5.5 Quick Play — server countdown before auto-start (seconds remaining). */
   onQuickCountdown?: (seconds: number) => void;
+  /** §5.4 Match cancelled because a human player left within the first 30s. */
+  onMatchCancelled?: (reason: string) => void;
 }
 
 // ─── Persisted session (localStorage) ────────────────────────────────────────
@@ -230,6 +232,9 @@ export class GameNetwork {
         gsp = gs.players[gs.players.length - 1];
       }
 
+      // §5.3 Client-side prediction: save local player's predicted position before overwrite
+      const savedLocalPos = (isLocal && gsp) ? { ...gsp.pos } : null;
+
       Object.assign(gsp, sp); // copy all fields first
 
       if (!isLocal && bp) {
@@ -243,6 +248,14 @@ export class GameNetwork {
         if (da >  Math.PI) da -= 2 * Math.PI;
         if (da < -Math.PI) da += 2 * Math.PI;
         gsp.facingAngle = bp.facingAngle + da * t;
+      } else if (isLocal && savedLocalPos) {
+        // §5.3 Local player: keep predicted position if server correction < 0.5m (16px)
+        // Larger corrections = rubber-band snap (already applied via Object.assign above)
+        const correction = Math.hypot(sp.pos.x - savedLocalPos.x, sp.pos.y - savedLocalPos.y);
+        if (correction <= 16) {
+          gsp.pos = savedLocalPos; // keep client prediction
+        }
+        // else: gsp.pos stays as sp.pos — rubber-band snap back to server position
       }
     }
 
@@ -313,6 +326,10 @@ export class GameNetwork {
         break;
       case 'quick_countdown':
         this.callbacks.onQuickCountdown?.(msg['seconds'] as number);
+        break;
+      case 'match_cancelled':
+        // §5.4 Human player disconnected within first 30s — match cancelled
+        this.callbacks.onMatchCancelled?.(msg['reason'] as string ?? 'disconnect_early');
         break;
     }
   }

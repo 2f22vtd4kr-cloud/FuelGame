@@ -40,6 +40,7 @@ export default function App() {
   const networkRef = useRef<GameNetwork | null>(null);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [multiDisconnected, setMultiDisconnected] = useState(false);
+  const [matchCancelled, setMatchCancelled] = useState(false);
 
   // ── Snapshot from game loop ────────────────────────────────────────────────
   const handleSnapshot = useCallback((snap: GameState) => {
@@ -70,6 +71,7 @@ export default function App() {
     setMyPlayerId(playerId);
     setActiveNetwork(network);
     setMultiDisconnected(false);
+    setMatchCancelled(false);
     // Re-register callbacks for the in-game phase so lobby-unmount callbacks
     // don't try to update unmounted lobby state.
     network.updateCallbacks({
@@ -78,6 +80,10 @@ export default function App() {
       },
       onError(_msg) {
         setMultiDisconnected(true);
+      },
+      // §5.4 Match cancelled because a human left in the first 30s
+      onMatchCancelled(_reason) {
+        setMatchCancelled(true);
       },
       // Disable lobby-phase callbacks that would reference unmounted state
       onRoomCreated: undefined,
@@ -96,6 +102,7 @@ export default function App() {
     setActiveNetwork(null);
     setMyPlayerId(null);
     setMultiDisconnected(false);
+    setMatchCancelled(false);
     resetGameState();
     clearMoment();
     audio.stopMusic();
@@ -280,6 +287,37 @@ export default function App() {
       {/* ── Results screen ── */}
       {appPhase === 'results' && (
         <GameResults gs={snapshot} onPlayAgain={handlePlayAgain} />
+      )}
+
+      {/* ── §5.4 Match cancelled (human left in first 30s) ── */}
+      {matchCancelled && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(0,0,0,0.85)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'sans-serif',
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#FF9800', marginBottom: 8 }}>
+            Матч отменён
+          </div>
+          <div style={{ fontSize: 13, color: '#aaa', marginBottom: 28, textAlign: 'center', maxWidth: 260 }}>
+            Игрок вышел в первые 30 секунд. Матч аннулирован.
+          </div>
+          <button
+            onClick={handlePlayAgain}
+            style={{
+              padding: '12px 28px',
+              background: 'linear-gradient(135deg,#FF9800,#FFB74D)',
+              border: 'none', borderRadius: 10,
+              fontSize: 15, fontWeight: 700, color: '#fff',
+              cursor: 'pointer',
+            }}
+          >
+            ← В главное меню
+          </button>
+        </div>
       )}
 
       {/* ── Multiplayer disconnect overlay ── */}

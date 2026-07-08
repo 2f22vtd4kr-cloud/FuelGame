@@ -146,6 +146,9 @@ function updateHumanPlayer(dt: number, input: InputState): void {
   // §3.1.2 Vent cooldown decay
   if (player.ventCooldown > 0) player.ventCooldown -= dt;
 
+  // §5.6 Speed clamp / teleport detection: record position before movement
+  const prevPos = { ...player.pos };
+
   if (isMoving) {
     const nx = input.dx / len;
     const ny = input.dy / len;
@@ -164,6 +167,14 @@ function updateHumanPlayer(dt: number, input: InputState): void {
         const candY = clampToMap({ x: player.pos.x, y: newY }, 14);
         if (!isInsideBuilding(candY, 14)) { player.pos = candY; }
       }
+    }
+
+    // §5.6 Anti-cheat: max physically possible distance in this tick (15% margin for float/lag)
+    const maxSpeedPx    = player.speed * SPRINT_SPEED_MULT * SHAWARMA_SPEED_BOOST_MULT;
+    const maxDistPerTick = maxSpeedPx * Math.min(dt, 0.05) * 1.15;
+    const movedDist      = Math.hypot(player.pos.x - prevPos.x, player.pos.y - prevPos.y);
+    if (movedDist > maxDistPerTick) {
+      player.pos = prevPos; // snap back — teleport/speed-hack detected
     }
   }
 

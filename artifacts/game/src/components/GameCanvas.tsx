@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type { InputState } from '../game/types';
-import { SIPHON_CLICK_RADIUS } from '../game/types';
+import { SIPHON_CLICK_RADIUS, MAP_W, MAP_H, SPRINT_SPEED_MULT, CROUCH_SPEED_MULT } from '../game/types';
 import { gs } from '../game/state';
 import { dist } from '../data/map';
 import { tickGame, checkBackstabMoment } from '../game/logic';
@@ -129,6 +129,27 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
         // Snapshot siphon phases BEFORE applying new state to detect transitions
         const prevPhases = prevCarSiphonPhaseRef.current;
         network.applyLatestState(performance.now());
+
+        // §5.3 Client-side prediction: immediately apply local input to local player
+        // so movement feels instant instead of waiting for the next server tick (50ms).
+        if (gs.phase === 'play') {
+          const lp = gs.players.find(p => p.id === gs.localPlayerId);
+          if (lp && lp.isAlive && lp.isHuman) {
+            const len = Math.sqrt(inp.dx * inp.dx + inp.dy * inp.dy);
+            if (len > 0.05) {
+              const nx = inp.dx / len;
+              const ny = inp.dy / len;
+              const speedMult = lp.isSprinting ? SPRINT_SPEED_MULT
+                : lp.isCrouching ? CROUCH_SPEED_MULT
+                : 1.0;
+              const speed = lp.speed * speedMult;
+              lp.pos = {
+                x: Math.max(14, Math.min(MAP_W - 14, lp.pos.x + nx * speed * dt)),
+                y: Math.max(14, Math.min(MAP_H - 14, lp.pos.y + ny * speed * dt)),
+              };
+            }
+          }
+        }
 
         // After applying server state, restore our localPlayerId
         if (myPlayerId) gs.localPlayerId = myPlayerId;
