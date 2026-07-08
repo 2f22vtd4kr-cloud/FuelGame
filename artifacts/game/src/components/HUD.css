@@ -1,0 +1,350 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   HUD — Propaganda Pop style
+   Palette: --pp-red #cc2b1d | --pp-mustard #e5a50a | --pp-cream #f4ebd0
+            --pp-black #1a1a1a | white #fff
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  --pp-red:     #cc2b1d;
+  --pp-mustard: #e5a50a;
+  --pp-cream:   #f4ebd0;
+  --pp-black:   #1a1a1a;
+}
+
+/* ── Halftone dot overlay ─────────────────────────────────────────────── */
+.pp-halftone {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background-image: radial-gradient(circle, rgba(0,0,0,0.18) 1px, transparent 1px);
+  background-size: 4px 4px;
+  mix-blend-mode: multiply;
+}
+
+/* ── Poster-edge card (hard shadow) ──────────────────────────────────── */
+.pp-card {
+  background: white;
+  border: 2px solid var(--pp-black);
+  box-shadow: 4px 4px 0 var(--pp-black);
+}
+.pp-card-dark {
+  background: var(--pp-black);
+  border: 2px solid rgba(255,255,255,0.25);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.8);
+}
+.pp-card-red {
+  background: var(--pp-red);
+  border: 2px solid var(--pp-black);
+  box-shadow: 3px 3px 0 var(--pp-black);
+}
+.pp-card-cream {
+  background: var(--pp-cream);
+  border: 2px solid var(--pp-black);
+  box-shadow: 5px 5px 0 var(--pp-black);
+}
+
+/* ── Stamp-press button ───────────────────────────────────────────────── */
+.pp-btn {
+  border: 2px solid var(--pp-black);
+  box-shadow: 3px 3px 0 var(--pp-black);
+  cursor: pointer;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: box-shadow 0.08s, transform 0.08s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.pp-btn:active {
+  box-shadow: 1px 1px 0 var(--pp-black);
+  transform: translate(2px, 2px);
+}
+.pp-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: 2px 2px 0 var(--pp-black);
+  transform: none;
+}
+
+/* ── Heading style ────────────────────────────────────────────────────── */
+.pp-heading {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+
+/* ── Soviet star accent ───────────────────────────────────────────────── */
+.pp-star::before {
+  content: '★';
+  color: var(--pp-red);
+  margin-right: 4px;
+}
+
+/* ── Sabotage banner ──────────────────────────────────────────────────── */
+.pp-sabotage-banner {
+  background: var(--pp-red);
+  border-bottom: 3px solid var(--pp-black);
+  padding: 4px 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-weight: 900; font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.08em; color: white;
+}
+
+/* ── Top strip ────────────────────────────────────────────────────────── */
+.pp-topstrip {
+  background: var(--pp-black);
+  border-bottom: 3px solid var(--pp-red);
+  padding: 6px 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* ── Unity bar ────────────────────────────────────────────────────────── */
+.pp-unity-track {
+  height: 8px;
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pp-unity-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--pp-mustard), #f0c030);
+  border-radius: 1px;
+  transition: width 0.35s ease;
+}
+
+/* ── Role badge ───────────────────────────────────────────────────────── */
+.pp-role-khozain {
+  background: #1565C0; border: 2px solid var(--pp-black);
+  box-shadow: 2px 2px 0 var(--pp-black);
+  color: white; font-weight: 900; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 3px 8px; border-radius: 2px;
+}
+.pp-role-slivshchik {
+  background: var(--pp-red); border: 2px solid var(--pp-black);
+  box-shadow: 2px 2px 0 var(--pp-black);
+  color: white; font-weight: 900; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 3px 8px; border-radius: 2px;
+}
+
+/* ── News ticker ──────────────────────────────────────────────────────── */
+.pp-ticker-bar {
+  background: var(--pp-black);
+  border-top: 3px solid var(--pp-red);
+  padding: 4px 0;
+  display: flex; align-items: center; overflow: hidden;
+}
+.pp-ticker-label {
+  background: var(--pp-red);
+  color: white; font-size: 8px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 2px 6px; flex-shrink: 0;
+  border-right: 2px solid var(--pp-black);
+}
+.pp-ticker-scroll {
+  flex: 1; overflow: hidden; position: relative;
+}
+.pp-ticker-text {
+  display: inline-block;
+  white-space: nowrap;
+  color: var(--pp-cream);
+  font-size: 10px; font-weight: 600;
+  animation: pp-ticker 18s linear infinite;
+  padding-left: 100%;
+}
+@keyframes pp-ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-200%); }
+}
+
+/* ── Tutorial card (propaganda poster) ─────────────────────────────────── */
+.pp-tutorial {
+  background: var(--pp-cream);
+  border: 3px solid var(--pp-black);
+  box-shadow: 6px 6px 0 var(--pp-black);
+  padding: 14px 18px;
+  max-width: 300px; width: calc(100vw - 40px);
+  text-align: center;
+}
+.pp-tutorial-title {
+  color: var(--pp-red);
+  font-weight: 900; font-size: 14px;
+  text-transform: uppercase; letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.pp-tutorial-body {
+  color: var(--pp-black);
+  font-size: 11px; line-height: 1.5;
+}
+.pp-tutorial-skip {
+  margin-top: 10px;
+  background: transparent;
+  border: 1.5px solid rgba(26,26,26,0.25);
+  color: rgba(26,26,26,0.45);
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 10px; cursor: pointer;
+  border-radius: 2px;
+}
+
+/* ── Corner action buttons ─────────────────────────────────────────────── */
+.pp-corner-btn {
+  width: 36px; height: 36px;
+  background: var(--pp-black);
+  border: 2px solid rgba(255,255,255,0.2);
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.6);
+  color: var(--pp-cream);
+  font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 2px;
+  transition: background 0.12s, box-shadow 0.08s, transform 0.08s;
+}
+.pp-corner-btn:active {
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.6);
+  transform: translate(2px, 2px);
+}
+.pp-corner-btn.active {
+  background: var(--pp-red);
+  border-color: var(--pp-black);
+  box-shadow: 3px 3px 0 var(--pp-black);
+}
+
+/* ── Sabotage trigger button ───────────────────────────────────────────── */
+.pp-sabotage-btn {
+  width: 44px; height: 44px;
+  background: var(--pp-red);
+  border: 2px solid var(--pp-black);
+  box-shadow: 3px 3px 0 var(--pp-black);
+  color: white; font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 2px;
+  transition: box-shadow 0.08s, transform 0.08s;
+}
+.pp-sabotage-btn:active {
+  box-shadow: 1px 1px 0 var(--pp-black);
+  transform: translate(2px, 2px);
+}
+.pp-sabotage-btn.cooldown {
+  background: rgba(100,20,20,0.7);
+  box-shadow: 2px 2px 0 var(--pp-black);
+}
+
+/* ── Emote grid ─────────────────────────────────────────────────────────── */
+.pp-emote-btn {
+  width: 44px; height: 44px;
+  background: var(--pp-black);
+  border: 2px solid rgba(255,255,255,0.22);
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.8);
+  border-radius: 2px; font-size: 22px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: box-shadow 0.08s, transform 0.08s;
+}
+.pp-emote-btn:active {
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.8);
+  transform: translate(2px,2px);
+}
+
+/* ── Prompt pill ─────────────────────────────────────────────────────────── */
+.pp-prompt {
+  background: var(--pp-black);
+  border: 2px solid var(--pp-mustard);
+  box-shadow: 3px 3px 0 var(--pp-black);
+  color: var(--pp-cream);
+  padding: 5px 14px;
+  font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  display: inline-block; border-radius: 2px;
+}
+
+/* ── Minimap ─────────────────────────────────────────────────────────────── */
+.pp-minimap-wrap {
+  border: 2px solid rgba(255,255,255,0.3);
+  box-shadow: 3px 3px 0 var(--pp-black);
+  border-radius: 2px; overflow: hidden; flex-shrink: 0;
+  position: relative;
+}
+
+/* ── Backstab toast ─────────────────────────────────────────────────────── */
+.pp-backstab {
+  background: var(--pp-cream);
+  border: 3px solid var(--pp-red);
+  box-shadow: 5px 5px 0 var(--pp-black);
+  padding: 12px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  min-width: 240px; max-width: 300px;
+}
+
+/* ── Siphon alert ─────────────────────────────────────────────────────────── */
+.pp-siphon-alert {
+  background: rgba(204,43,29,0.15);
+  border: 2px solid var(--pp-red);
+  box-shadow: 3px 3px 0 var(--pp-black);
+  border-radius: 2px;
+  padding: 6px 10px;
+  display: flex; align-items: center; gap: 6px;
+  animation: pp-siphon-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes pp-siphon-pulse {
+  from { opacity: 0.65; }
+  to   { opacity: 1; }
+}
+
+/* ── Settings panel ──────────────────────────────────────────────────────── */
+.pp-settings-panel {
+  background: var(--pp-black);
+  border: 2px solid rgba(255,255,255,0.2);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.9);
+  border-radius: 2px;
+  padding: 12px 14px;
+  min-width: 230px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.pp-settings-label {
+  font-size: 9px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.1em; color: rgba(244,235,208,0.5);
+  margin-bottom: 2px;
+}
+
+/* ── Dropdown panel ──────────────────────────────────────────────────────── */
+.pp-dropdown {
+  background: var(--pp-black);
+  border: 2px solid rgba(255,255,255,0.18);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.9);
+  border-radius: 2px;
+  padding: 8px 10px;
+}
+
+/* ── Immunity ticket badge ───────────────────────────────────────────────── */
+.pp-ticket-badge {
+  background: var(--pp-mustard);
+  border: 2px solid var(--pp-black);
+  box-shadow: 3px 3px 0 var(--pp-black);
+  color: var(--pp-black);
+  padding: 5px 10px;
+  font-weight: 900; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-radius: 2px;
+  display: flex; align-items: center; gap: 5px;
+}
+
+/* ── Meeting cooldown badge ──────────────────────────────────────────────── */
+.pp-meeting-cd {
+  background: var(--pp-black);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.7);
+  color: rgba(244,235,208,0.55);
+  padding: 2px 8px; font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  border-radius: 2px;
+}
+
+/* ── Backstab animation ─────────────────────────────────────────────────── */
+@keyframes pp-backstab-in {
+  0%   { transform: translateX(-50%) scale(0.85); opacity: 0; }
+  60%  { transform: translateX(-50%) scale(1.04); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1);    opacity: 1; }
+}
+
+/* ── High contrast mode ─────────────────────────────────────────────────── */
+[data-hc="1"] { text-shadow: 0 0 4px #000, 0 1px 3px #000 !important; }
+[data-hc="1"] div, [data-hc="1"] span, [data-hc="1"] button { letter-spacing: 0.01em; }
