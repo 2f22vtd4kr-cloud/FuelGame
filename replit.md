@@ -45,7 +45,8 @@ The game is then available at the Replit preview URL (root path `/`).
 
 ## Design bible
 
-`attached_assets/1_Game_DOC_1783421374443.md` — 1992-line source of truth for all mechanics.
+- `attached_assets/1_Game_DOC_1783421374443.md` — Volume I, 1992-line source of truth for all mechanics. **Fully implemented.**
+- `docs/vol2/` — Volume II (Production Specs, Implementation & Operations), chunked one file per section (`18-task-minigames.md` … `28-final-word.md`) so it never needs to be re-read in one giant pass. **Start every Volume II session by reading `docs/vol2/PROGRESS.md`** — it tracks per-section status (done / partial / not started) and lists the next suggested gaps to close.
 
 ## Type-checking
 

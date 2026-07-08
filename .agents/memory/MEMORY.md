@@ -23,3 +23,4 @@
 - [95-Y A* pathfinding](game-pathfinding.md) — §4.5 grid A* in pathfinder.ts (both packages); heap sized N×8 + closed set; start+dest snapped to walkable; LOS enforces diagonal corner-clearance; LOD at 240wu
 - [95-Y accessibility + msgpack](game-vol1-accessibility-protocol.md) — §13.1 accessibility persisted in profile; §12.4 card tutorial removed (in-game shawarma tutorial only); §05.2 WS is binary msgpack (never JSON)
 - [95-Y doc alignment: daily reward/AI%/LOD](game-doc-alignment-daily-ai-lod.md) — client/server botAI+types are hand-mirrored (not generated); doc %s are per-opportunity rolls, not per-frame; LOD has 2 independent parts (pathfinding mode + 5Hz update throttle)
+- [95-Y Volume II doc chunking](game-vol2-doc-chunking.md) — 1902-line Vol2 design doc split into docs/vol2/18-*.md…28-*.md; always read docs/vol2/PROGRESS.md first to see per-section done/gap status
