@@ -1,0 +1,569 @@
+STOP PATCHING. START OPERATING LIKE A WORLD-CLASS AAA GAME STUDIO.
+
+The current development methodology has failed.
+
+Despite multiple frontier LLMs (Claude, GPT, Gemini, Fable, Canvas and every supporting system available inside Replit) working on this repository, the project still feels like an unpolished prototype instead of a commercial-quality game.
+
+This changes now.
+
+Forget incremental patching.
+
+Forget “fix one issue.”
+
+Forget “good enough.”
+
+From this moment forward you are operating as a fully autonomous AAA game studio whose only objective is to ship a production-ready multiplayer game.
+
+⸻
+
+THIS IS YOUR EXECUTION MODEL
+
+Spawn as many independent reasoning agents as your architecture allows.
+
+Treat it as if there are 100+ specialized workers operating simultaneously.
+
+Not sequentially.
+
+Parallel.
+
+Every worker owns a domain.
+
+Examples:
+
+* Art Direction
+* Environment Art
+* Lighting
+* Shadows
+* Sprite Generation
+* Character Animation
+* UI
+* UX
+* Audio
+* Music
+* Networking
+* AI
+* NPC Behaviour
+* Vehicle System
+* Minigames
+* Economy
+* Balancing
+* Accessibility
+* Mobile Controls
+* Camera
+* Performance
+* Memory
+* Rendering
+* QA
+* Automated Testing
+* Bug Hunting
+* Code Review
+* Architecture
+* Production Readiness
+
+Every worker continuously reports problems.
+
+No worker is allowed to assume another worker solved something.
+
+⸻
+
+EVERY FEATURE IS NOW A PRODUCT
+
+Read BOTH attached design documents completely.
+
+Break them into individual systems.
+
+Every single mechanic becomes an independent development project.
+
+For every feature:
+
+• understand the intended gameplay
+
+• research industry best practices
+
+• compare against successful implementations
+
+• implement
+
+• test
+
+• profile
+
+• polish
+
+• repeat until there are no known issues.
+
+Do not stop because something “works.”
+
+Stop when it feels commercial.
+
+⸻
+
+IMPLEMENTATIONS ARE NO LONGER ALLOWED TO BE “GOOD ENOUGH”
+
+Every feature must satisfy five conditions.
+
+Functional
+
+Works every single time.
+
+No broken buttons.
+
+No dead interactions.
+
+No hidden edge cases.
+
+No race conditions.
+
+No mobile issues.
+
+No browser inconsistencies.
+
+⸻
+
+Visual
+
+Looks modern.
+
+Fits the art direction.
+
+Matches the environment.
+
+Correct scale.
+
+Correct perspective.
+
+Correct lighting.
+
+Correct shadows.
+
+Correct depth.
+
+Correct animation.
+
+Correct feedback.
+
+⸻
+
+Performance
+
+Runs smoothly.
+
+Stable FPS.
+
+Minimal GPU usage.
+
+Minimal CPU usage.
+
+No unnecessary redraws.
+
+No unnecessary allocations.
+
+No memory leaks.
+
+No battery drain.
+
+No overheating.
+
+This is an HTML5 mobile game.
+
+Phones should not become space heaters.
+
+Profile everything.
+
+Optimize continuously.
+
+⸻
+
+User Experience
+
+Every interaction must feel satisfying.
+
+Every animation has anticipation.
+
+Every sound has purpose.
+
+Every button provides feedback.
+
+Every popup feels intentional.
+
+Every transition is smooth.
+
+No abrupt changes.
+
+No visual noise.
+
+⸻
+
+Production Quality
+
+Would you honestly publish this to Steam?
+
+Would you confidently submit this to Google Play?
+
+Would you proudly show it on your portfolio?
+
+If the answer is “not yet”…
+
+…then it isn’t finished.
+
+⸻
+
+STOP INVENTING SOLUTIONS THAT ALREADY EXIST
+
+You possess access to decades of accumulated game design knowledge.
+
+Use it.
+
+Before implementing ANY mechanic:
+
+Research how successful games solved it.
+
+Not to copy assets.
+
+To understand WHY those solutions work.
+
+Study games like:
+
+Among Us
+
+Project Zomboid
+
+Stardew Valley
+
+Core Keeper
+
+Don’t Starve
+
+Vampire Survivors
+
+Hotline Miami
+
+Nuclear Throne
+
+Children of Morta
+
+Death Road to Canada
+
+If a mechanic already has an industry standard—
+
+understand it first.
+
+Then build something original that reaches or exceeds that level of quality.
+
+⸻
+
+OUR PRIMARY REFERENCE
+
+The overall feeling, readability, polish and consistency should compete with Among Us.
+
+Not because we are cloning it.
+
+Because it proves how polished a relatively simple 2D game can become.
+
+Movement.
+
+Camera.
+
+Lighting.
+
+Shadows.
+
+Interaction prompts.
+
+Task systems.
+
+Animation timing.
+
+Feedback.
+
+Everything should achieve that level of quality or higher.
+
+⸻
+
+ART DIRECTION
+
+The Gemini-generated mock-up demonstrates the visual quality we are aiming for.
+
+NOT the literal scene.
+
+NOT identical assets.
+
+NOT copied artwork.
+
+The target is:
+
+consistent proportions
+
+cohesive palette
+
+clean readability
+
+professional HUD
+
+high-quality sprites
+
+proper environmental composition
+
+modern production value
+
+Currently our game looks like different art packs stitched together.
+
+That is unacceptable.
+
+Every asset must look like it belongs in the same universe.
+
+⸻
+
+THE CURRENT SCREENSHOTS EXPOSE FUNDAMENTAL PROBLEMS
+
+Interactive vehicles do not belong in the environment.
+
+Scale is inconsistent.
+
+Perspective is inconsistent.
+
+Sprites obviously float on top of the world.
+
+Background vehicles actually integrate better than the interactive ones.
+
+Either redesign the interactive assets or make the existing world vehicles interactive.
+
+Never sacrifice visual cohesion for implementation convenience.
+
+⸻
+
+Shadows are inconsistent.
+
+Some objects cast them.
+
+Some don’t.
+
+Some are hard.
+
+Some are soft.
+
+Some point in different directions.
+
+Lighting should obey one coherent world model.
+
+⸻
+
+HUD still feels like multiple unrelated systems.
+
+Spacing.
+
+Typography.
+
+Hierarchy.
+
+Information density.
+
+Everything should feel intentional.
+
+⸻
+
+Mobile UX still exposes keyboard controls.
+
+This is unacceptable.
+
+No desktop prompts.
+
+No “Press E.”
+
+No keyboard tutorials.
+
+Everything must be native to touch devices.
+
+⸻
+
+Placeholder content should never survive.
+
+Developer text.
+
+Debug icons.
+
+Temporary assets.
+
+Broken strings.
+
+Incomplete localization.
+
+All removed.
+
+⸻
+
+Audio needs professional treatment.
+
+Music should fade in.
+
+Fade out.
+
+Crossfade.
+
+Ambient loops.
+
+Layer correctly.
+
+Sound effects should support gameplay rather than interrupt it.
+
+⸻
+
+MINIGAMES
+
+This is one of the biggest disappointments.
+
+The first minigame already demonstrates the problem.
+
+The wire task breaks after the first interaction.
+
+Buttons stop responding.
+
+The mechanic itself lacks creativity.
+
+It feels like a proof of concept rather than something players would genuinely enjoy repeating.
+
+Stop creating placeholder mechanics.
+
+Every minigame should have:
+
+clear readability
+
+progressive difficulty
+
+interesting player decisions
+
+excellent feedback
+
+animation
+
+sound
+
+polish
+
+replayability
+
+Study why popular task systems are engaging.
+
+Then build something better.
+
+⸻
+
+AUTOMATED QA IS NOW MANDATORY
+
+Every worker is also a tester.
+
+Nobody ships code without validating it.
+
+Automatically:
+
+play the game
+
+play every role
+
+complete every objective
+
+fail every objective
+
+spam every button
+
+disconnect
+
+reconnect
+
+interrupt animations
+
+rotate phones
+
+resize browsers
+
+stress networking
+
+spawn hundreds of entities
+
+verify memory
+
+verify FPS
+
+verify battery consumption
+
+verify every interaction.
+
+If anything fails—
+
+fix it before continuing.
+
+⸻
+
+NO MORE LOCAL OPTIMIZATION
+
+Never optimize one feature while damaging five others.
+
+Every change must be evaluated globally.
+
+Whenever code changes:
+
+Run a complete project review.
+
+Visual consistency.
+
+Gameplay consistency.
+
+Performance.
+
+Architecture.
+
+Regression testing.
+
+Everything.
+
+⸻
+
+THINK LIKE OWNERS
+
+Never ask:
+
+“Does this technically work?”
+
+Instead ask:
+
+“Would players love this?”
+
+“Would reviewers praise this?”
+
+“Would this survive comparison with successful games?”
+
+“Would I personally ship this?”
+
+If not—
+
+continue iterating.
+
+⸻
+
+THIS REPOSITORY SHOULD FEEL LIKE A PREMIUM GAME
+
+Every frame.
+
+Every pixel.
+
+Every animation.
+
+Every sound.
+
+Every mechanic.
+
+Every transition.
+
+Every interaction.
+
+Every menu.
+
+Every shadow.
+
+Every optimization.
+
+Every line of code.
+
+Everything should reflect the standards of a modern commercial game.
+
+This is a 2D HTML5 game in 2026. There is no excuse for it to feel decades behind modern expectations. Use every AI capability available to you—parallel reasoning, research, code review, testing, profiling, and iterative refinement—to build a cohesive, performant, polished game that is genuinely ready for players, not merely functional enough to demo.
