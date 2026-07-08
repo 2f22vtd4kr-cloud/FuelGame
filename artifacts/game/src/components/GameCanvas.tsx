@@ -5,7 +5,7 @@ import { tickGame, checkBackstabMoment } from '../game/logic';
 import { triggerEmote } from '../game/gameActions';
 import { renderGame } from '../game/renderer';
 import { audio } from '../game/audio';
-import { captureMoment } from '../game/replayBuffer';
+import { captureMoment, startFrameCapture, stopFrameCapture } from '../game/replayBuffer';
 import { loadSprites } from '../game/sprites';
 import type { GameNetwork } from '../game/network';
 import VirtualJoystick from './VirtualJoystick';
@@ -39,6 +39,7 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
   const touchCrouchRef = useRef(false);
   const sprintToggleRef = useRef(false);  // keyboard sprint toggle state
   const prevBackstabMomentRef = useRef<string | null>(null); // §9.2 frame capture
+  const prevPhaseRef = useRef<string>('');                   // §9.2 phase tracking for frame buffer
 
   const [showEmoteWheel, setShowEmoteWheel] = useState(false);
 
@@ -136,7 +137,19 @@ export default function GameCanvas({ onStateSnapshot, network, myPlayerId }: Gam
 
       renderGame(ctx, gs, canvas!.width, canvas!.height);
 
-      // §9.2 Backstab Moment: capture canvas when a dramatic moment is first detected
+      // §9.2 Frame buffer: start capturing on play, stop on results/end
+      if (gs.phase !== prevPhaseRef.current) {
+        const wasPlay = prevPhaseRef.current === 'play';
+        const isPlay  = gs.phase === 'play';
+        prevPhaseRef.current = gs.phase;
+        if (isPlay && !wasPlay) {
+          startFrameCapture(canvas!);
+        } else if (wasPlay && !isPlay) {
+          stopFrameCapture();
+        }
+      }
+
+      // §9.2 Backstab Moment: encode GIF when a dramatic moment is first detected
       if (gs.backstabMoment && gs.backstabMoment !== prevBackstabMomentRef.current) {
         prevBackstabMomentRef.current = gs.backstabMoment;
         captureMoment(canvas!, gs.backstabMoment);

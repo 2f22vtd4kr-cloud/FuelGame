@@ -1,30 +1,37 @@
 ---
-name: 95-Y Vol1 remaining gaps implementation
-description: What was implemented to close the final Vol 1 design-doc gaps
+name: 95-Y Vol1 gaps (sessions 5–8)
+description: match timer, neutral roles, bot fixes, skip-discussion, per-player stats, share card, Барсик, briefing, getMatchTitle, replayBuffer, backstabMoment, session 8 items
 ---
 
-## What was implemented (Vol 1 completion)
+## Session 5 gaps
+- Match timer, neutral roles (barsik/cop/janitor), bot pipe-burst fix, skip-discussion majority vote
+- Per-player stats tracked and shown on results screen
+- Share card PNG generated on results screen
 
-### §2.1 Briefing cinematic text
-- App.tsx now shows atmospheric setting text ("ЖК «Цветочные Поляны». Лето 2026. АИ-95: 85₽/л. Кто-то сифонит ваши баки.") above the role card
-- Neutral role briefing block (barsik/policeman/janitor goal text in gold) shown inside the card when applicable
-- Skip button appears when `briefingTimer < 3` (2+ seconds elapsed from 5s total); calls `skipBriefing()` exported from logic.ts
-- `clearMoment()` called in `handlePlayAgain` to reset replay buffer
+## Session 6
+- Барсик drawn as smaller circle (radius reduced)
 
-### §9.1 Per-match title
-- `getMatchTitle(player, winner, unityMeter, winReason)` function in GameResults.tsx
-- Contextual titles: Топливный Барон (>70% siphon + win), Строитель Двора (100% unity), Детектив ЖК (ejection win), Трудяга Двора (5+ tasks), Котик Двора (barsik), etc.
-- Title shown prominently on results screen (large gold text)
-- Title embedded in share card PNG between result headline and player stats
+## Session 7
+- briefing atmospheric text + skip button
+- getMatchTitle §9.1 — per-match Russian title based on role/outcome/stats
+- replayBuffer.ts §9.2 — **animated GIF** (not JPEG): rolling 8fps ring buffer (3s = 24 frames), gifenc encoding, watermark per frame, blob URL. Triggers: catch_siphoner / caught_siphoning / dramatic_eject
+- backstabMoment on GameState
 
-### §9.2 Backstab Moment replay system
-- `replayBuffer.ts` — captures canvas to JPEG with watermark+label on `captureMoment(canvas, type)`, exposes `downloadMoment()`, `clearMoment()`, guarded with try/catch for tainted canvas
-- `GameState` gains `backstabMoment: 'catch_siphoner' | 'caught_siphoning' | 'dramatic_eject' | null` and `backstabMomentAcked: boolean`
-- `updateBackstabMoment()` (private) runs in tickGame play phase; exported as `checkBackstabMoment()` for multiplayer path
-- Detection: `catch_siphoner` = khozain within SIPHON_AUDIO_RADIUS of phase-2 siphon; `caught_siphoning` = slivshchik siphoning while another player nearby; `dramatic_eject` = local player ejected in resolveMeeting
-- `GameCanvas.tsx` detects when `gs.backstabMoment` transitions from null to non-null, calls `captureMoment(canvas, type)`; multiplayer path calls `checkBackstabMoment()` after applyLatestState
-- `HUD.tsx` shows animated "💥 БАКСТАБ МОМЕНТ!" toast with "💾 Скачать момент" and dismiss "✕" buttons; CSS backstabPulse animation
+## Session 8
+- Lobby "Получить талоны" button §10.2
+- Clickable GameResults CTA
+- §2.2 double-tap sprint + swipe-up emote
+- z-index fix for action buttons
 
-## Known limitations
-- Backstab detection uses proximity (SIPHON_AUDIO_RADIUS, 280px) not raycasting line-of-sight; this is intentional (matches the §13.1 audio indicator range — if you hear it, it's a moment)
-- `dramatic_eject` only fires for the local player being ejected, not for witnessing others ejected
+## §9.2 GIF implementation notes
+- `startFrameCapture(canvas)` called from GameCanvas when `gs.phase` transitions to `'play'`
+- `stopFrameCapture()` called when phase leaves `'play'`
+- `captureMoment(canvas, type)` freezes buffer, encodes GIF with gifenc, stores blob URL
+- `clearMoment()` revokes blob URL (no leak)
+- gifenc installed as dependency; types in `src/types/gifenc.d.ts`
+- `gif.bytes().buffer as ArrayBuffer` needed for Blob constructor (TS strict mode)
+
+## §9.4 Friend invite deep link auto-join
+- `MultiplayerLobby` receives `initialJoinCode` prop (extracted from `Telegram.WebApp.initDataUnsafe.start_param` in App.tsx)
+- Auto-join `useEffect` fires once on mount if `initialJoinCode` is set; delays 80ms then calls `handleJoin()` if `networkRef.current` is null (guards against race with manual join or reconnect)
+- `autoJoinFiredRef` prevents double-fire on strict-mode double-mount

@@ -221,6 +221,21 @@ export default function MultiplayerLobby({ onGameStarted, onBack, initialJoinCod
     network?.startGame();
   }
 
+  // ── §9.4 Auto-join when opened via friend invite deep link ──────────────
+  const autoJoinFiredRef = useRef(false);
+  useEffect(() => {
+    if (!initialJoinCode || autoJoinFiredRef.current) return;
+    autoJoinFiredRef.current = true;
+    // Small delay so mount settles; guard against any concurrent join/reconnect
+    const id = setTimeout(() => {
+      // networkRef is always current (ref), so safe to read inside closure
+      if (networkRef.current) return; // another join already in progress
+      handleJoin();
+    }, 80);
+    return () => clearTimeout(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Auto-reconnect banner (shown in menu screen) ─────────────────────────
   const [pendingSession, setPendingSession] = useState<ReturnType<typeof loadSession> | null>(null);
   const sessionCheckedRef = useRef(false);
